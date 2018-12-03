@@ -118,8 +118,6 @@ ductBr::ductBr(double* spos, double* sdir, double r, ductTree *owner){
 
   if (firstSeg->length == 0.0){
     failSeg = true;
-    // debug
-    std::cout << "First segment length 0\n" ;
   }
 
   // check if at ROI boundary by seeing if any neighboring voxels are outside ROI
@@ -133,8 +131,6 @@ ductBr::ductBr(double* spos, double* sdir, double r, ductTree *owner){
 	  static_cast<unsigned char*>(myTree->breast->GetScalarPointer(invox[0]+a,invox[1]+b,invox[2]+c));
 	if(p[0] != myTree->compartmentId && p[0] != myTree->tissue->duct){
 	  edgeSeg = true;
-	  // debug
-	  std::cout << "First segment hits boundary\n";
 	}
       }
     }
@@ -148,8 +144,7 @@ ductBr::ductBr(double* spos, double* sdir, double r, ductTree *owner){
     curLength += lastSeg->length;
     if(lastSeg->length == 0.0){
       failSeg = true;
-      // debug
-      std::cout << "Zero length segment created\n";
+      //std::cout << "Zero length segment created\n";
     }
     // check if at ROI boundary
     thePos = lastSeg->endPos;

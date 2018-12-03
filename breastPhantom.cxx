@@ -1481,7 +1481,6 @@ int main(int argc, char* argv[]){
   // decimate mesh
   vtkSmartPointer<vtkDecimatePro> decimate = 
     vtkSmartPointer<vtkDecimatePro>::New();
-  // debug
   decimate->SetTargetReduction(0.25);
 #if VTK_MAJOR_VERSION <= 5
   decimate->SetInput(cleanPoly->GetOutput());
@@ -2374,7 +2373,6 @@ int main(int argc, char* argv[]){
   double scaleNipple = vm["compartments.nippleScale"].as<double>();
   double gNipple = vm["compartments.nippleStrength"].as<double>();
 	
-  // debug
   double ligDistThresh = 12.0;
 	
   // radius of fat seeds to check for segmentation
@@ -3105,10 +3103,7 @@ int main(int argc, char* argv[]){
     boundaryDone[i] = 0;
   }
 
-  // debug - remove this later
-  vtkSmartPointer<vtkIdList> boundaryDel =
-    vtkSmartPointer<vtkIdList>::New();
-	
+  
   for(vtkIdType i=0; i<nBoundary; i++){
     vtkIdType myId = boundaryList->GetId(i);
     double loc[3];
@@ -3120,8 +3115,6 @@ int main(int argc, char* argv[]){
     unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(ijk));
 		
     if(p[0] == ufat || p[0] == tissue.muscle || vtkMath::Distance2BetweenPoints(loc, nipplePos) < areolaRad*areolaRad*2){
-      // set to remove from list
-      //boundaryDel->InsertNextId(myId);
       boundaryDone[i] = 1;
       remBoundary++;
     }
@@ -3903,14 +3896,12 @@ int main(int argc, char* argv[]){
   double innerLobulePerlinPers = 0.6;
   int innerLobulePerlinOct = 6; 
 
-  // debug
   double minSmallLobuleAxis = 1.0;
   double maxSmallLobuleAxis = 3.0;
   double minSmallAxialRatio = 0.4;
   double maxSmallAxialRatio = 0.8;
 
   double smallLobuleFraction;
-
 
   switch(densityClass){
   case 1: // dense
@@ -4087,7 +4078,6 @@ int main(int argc, char* argv[]){
 	  // convert glandular tissue
 	  unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
 					
-	  // debug - add overwrite of TDLU
 	  if(*p == ugland || *p == tissue.TDLU){
 	    
 	    // continuous standard coordinates

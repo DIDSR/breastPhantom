@@ -117,7 +117,6 @@ void generate_artery(vtkImageData* breast, po::variables_map vm, int* boundBox,
       }
     }
   } else {
-    // debug
     vtkSmartPointer<vtkXMLImageDataReader> fillReader =
       vtkSmartPointer<vtkXMLImageDataReader>::New();
     fillReader->SetFileName(arteryFilename);
