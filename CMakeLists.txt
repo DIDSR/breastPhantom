@@ -24,7 +24,7 @@ add_library(createVein createVein.cxx)
 SET(CMAKE_BUILD_TYPE "Release")
 SET(CMAKE_CXX_FLAGS  "-std=c++0x ${CMAKE_CXX_FLAGS}")
 
-add_executable(breastPhantomMain breastPhantom.cxx)
+add_executable(breastPhantom breastPhantom.cxx)
 
-target_link_libraries(breastPhantomMain perlinNoise createDuct createArtery createVein duct artery vein z lapack blas boost_program_options ${VTK_LIBRARIES})
+target_link_libraries(breastPhantom perlinNoise createDuct createArtery createVein duct artery vein z lapack blas boost_program_options ${VTK_LIBRARIES})
 
