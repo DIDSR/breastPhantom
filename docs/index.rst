@@ -12,6 +12,7 @@ This documentation provides information regarding how to download, install, and 
 anthropomorphic voxelized whole-breast phantoms.
 
 .. image:: VICTRE.png
+   :target: https://github.com/DIDSR/VICTRE
 
 This software  was developed as part of the `Virtual Imaging Clinical Trials for Regulatory Evaluation (VICTRE) project <https://github.com/DIDSR/VICTRE>`_
 at the `U. S. Food and Drug Administration <https://www.fda.gov>`_.
@@ -27,9 +28,6 @@ The VICTRE tools provide a complete simulated imaging chain for mammography and 
    running
    output
    visualization
+   samplecfg
    config
 
-Search
-------
-
-* :ref:`search`
