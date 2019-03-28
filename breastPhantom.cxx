@@ -2831,7 +2831,11 @@ int main(int argc, char* argv[]){
   double segSize = 0.2;
 
   int voxSkip = static_cast<int>(floor(segSize/imgRes));
-	
+
+  if(voxSkip < 1){
+    voxSkip = 1;
+  }
+
   // other side of back plane, do segmentation
 #pragma omp parallel for schedule(static,1)
   for(int i=backPlaneInd; i<=dim[0]-voxSkip; i+=voxSkip){
