@@ -13,6 +13,9 @@
  *
  */
 
+#ifndef __TISSUESTRUCT_HXX__
+#define __TISSUESTRUCT_HXX__
+
 // tissue types
 
 typedef struct {
@@ -28,3 +31,5 @@ typedef struct {
     unsigned char vein;
     unsigned char muscle;
 } tissueStruct;
+
+#endif /* __TISSUESTRUCT_HXX__ */

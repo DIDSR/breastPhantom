@@ -13,15 +13,12 @@
  *
  */
 
-#ifndef PERLINNOISE_HXX_
-#define PERLINNOISE_HXX_
+#ifndef __PERLINNOISE_HXX__
+#define __PERLINNOISE_HXX__
 
-#ifndef __BOOST__
-#define __BOOST__
 #include <boost/random.hpp>
 #include <boost/math/distributions/beta.hpp>
 #include <boost/program_options.hpp>
-#endif
 
 class perlinNoise{
 
@@ -47,4 +44,4 @@ public:
     perlinNoise(boost::program_options::variables_map vm, const char* type);
 };
 
-#endif /* PERLINNOISE_HXX_ */
+#endif /* __PERLINNOISE_HXX__ */

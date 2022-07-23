@@ -13,62 +13,25 @@
  *
  */
 
-#ifndef DUCT_HXX_
-#define DUCT_HXX_
+#ifndef __DUCT_HXX__
+#define __DUCT_HXX__
 
-#ifndef __CMATH__
-#define __CMATH__
 #include <cmath>
-#endif
-
-#ifndef __OMP__
-#define __OMP__
 #include <omp.h>
-#endif
-
-#ifndef __ALGORITHM__
-#define __ALGORITHM__
 #include <algorithm>
-#endif
 
 #include <vtkVersion.h>
-
-#ifndef __VTKIMAGEDATA__
-#define __VTKIMAGEDATA__
 #include <vtkImageData.h>
-#endif
-
-#ifndef __VTKPOINTS__
-#define __VTKPOINTS__
 #include <vtkPoints.h>
-#endif
-
-#ifndef __VTKDOUBLEARRAY__
-#define __VTKDOUBLEARRAY__
 #include <vtkDoubleArray.h>
-#endif
-
-#ifndef __VTKMATH__
-#define __VTKMATH__
 #include <vtkMath.h>
-#endif
-
-#ifndef __VTKVECTOR__
-#define __VTKVECTOR__
 #include <vtkVector.h>
-#endif
 
-#ifndef __BOOST__
-#define __BOOST__
 #include <boost/random.hpp>
 #include <boost/math/distributions/beta.hpp>
 #include <boost/program_options.hpp>
-#endif
 
-#ifndef __TISSUESTRUCT__
-#define __TISSUESTRUCT__
 #include "tissueStruct.hxx"
-#endif
 
 // forward declaration
 class ductSeg;
@@ -286,4 +249,4 @@ public:
     ductSeg(ductSeg*);
 };
 
-#endif /* DUCT_HXX_ */
+#endif /* __DUCT_HXX__ */

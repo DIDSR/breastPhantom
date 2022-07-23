@@ -13,47 +13,22 @@
  *
  */
 
-#ifndef VEIN_HXX_
-#define VEIN_HXX_
+#ifndef __VEIN_HXX__
+#define __VEIN_HXX__
 
-#ifndef __CMATH__
-#define __CMATH__
 #include <cmath>
-#endif
-
-#ifndef __OMP__
-#define __OMP__
 #include <omp.h>
-#endif
-
-#ifndef __ALGORITHM__
-#define __ALGORITHM__
 #include <algorithm>
-#endif
 
 #include <vtkVersion.h>
-
-#ifndef __VTKIMAGEDATA__
-#define __VTKIMAGEDATA__
 #include <vtkImageData.h>
-#endif
-
-#ifndef __VTKMATH__
-#define __VTKMATH__
 #include <vtkMath.h>
-#endif
 
-#ifndef __BOOST__
-#define __BOOST__
 #include <boost/random.hpp>
 #include <boost/math/distributions/beta.hpp>
 #include <boost/program_options.hpp>
-#endif
 
-#ifndef __TISSUESTRUCT__
-#define __TISSUESTRUCT__
 #include "tissueStruct.hxx"
-#endif
 
 // forward declaration
 class veinSeg;
@@ -257,4 +232,4 @@ public:
     veinSeg(veinSeg*);
 };
 
-#endif /* VEIN_HXX_ */
+#endif /* __VEIN_HXX__ */
