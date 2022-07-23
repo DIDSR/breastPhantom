@@ -27,4 +27,3 @@ SET(CMAKE_CXX_FLAGS  "-std=c++0x ${CMAKE_CXX_FLAGS}")
 add_executable(breastPhantom breastPhantom.cxx)
 
 target_link_libraries(breastPhantom perlinNoise createDuct createArtery createVein duct artery vein z lapack blas boost_program_options ${VTK_LIBRARIES})
-

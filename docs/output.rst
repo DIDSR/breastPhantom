@@ -42,7 +42,7 @@ p\_\ *nnnnnnnn*\ .cfg
 
 p\_\ *nnnnnnnn*\ .vti
     The phantom volume stored in VTK image format (XML with zlib-compressed data element).  This is a file format native to the Visualization Toolkit.  See https://www.vtk.org for more information.
-    This file can be opened in Paraview, an open-source, multi-platform data analysis and visualization application available for download at https://www.paraview.org/ 
+    This file can be opened in Paraview, an open-source, multi-platform data analysis and visualization application available for download at https://www.paraview.org/
 
 p\_\ *nnnnnnnn*\ .raw.gz
     The raw phantom volume stored as 8-bit unsigned integers in a gzip archive.  There is no file header.
@@ -50,7 +50,7 @@ p\_\ *nnnnnnnn*\ .raw.gz
 p\_\ *nnnnnnnn*\ .mhd
     A metaImage header file containing information about the phantom data stored in the file p\_\ *nnnnnnnn*\ .raw.gz  Parsing this header file will allow you to read and manipulate raw.gz phantom files.
     See https://itk.org/Wiki/MetaIO/Documentation for more information on the MetaImage format
-    
+
 p\_\ *nnnnnnnn*\ .loc
     This file lists candidate locations for insertion of masses and calcifications.  Each location is where a TDLU has been randomly generated.  Terminal duct lobular units are a common site for cancer formation.
     Locations are stored in plain text, one location per line with comma separated coordinates in millimeters.  See the phantom geometry section for an explanation of the coordinate system.

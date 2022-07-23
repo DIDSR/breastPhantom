@@ -53,4 +53,3 @@ they have been modified.
    visualization
    samplecfg
    config
-

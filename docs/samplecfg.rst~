@@ -1,5 +1,0 @@
-Sample Configuration Files
-==========================
-
-The `VICTRE project <https://github.com/DIDSR/VICTRE>`_ made use of four configuration files to represent four breast density levels.  These configuration files can be
-found in the `cfg <https://github.com/DIDSR/breastPhantom/cfg>`_ directory of the github repository.

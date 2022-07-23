@@ -110,7 +110,7 @@ Perlin noise parameters
 
 ==================== ======= ====================================
 Name                 Type    Notes
-==================== ======= ==================================== 
+==================== ======= ====================================
 perlin.maxDeviation  float   maximum fraction of radius deviation
 perlin.frequency     float   starting frequency
 perlin.lacunarity    float   octave frequency multiplier
@@ -130,7 +130,7 @@ Compartment boundary noise parameters
 ===================== ===== ======================================
 Name                  Type  Notes
 ===================== ===== ======================================
-boundary.maxDeviation float maximum fraction of distance deviation 
+boundary.maxDeviation float maximum fraction of distance deviation
 boundary.frequency    float starting frequency
 boundary.lacunarity   float octave frequency multiplier
 boundary.persistence  float octave signal decay
@@ -143,7 +143,7 @@ fat lobule boundary perturbation noise parameters
 ==================== ===== ======================================
 Name                 Type  Notes
 ==================== ===== ======================================
-perturb.maxDeviation float maximum fraction of distance deviation 
+perturb.maxDeviation float maximum fraction of distance deviation
 perturb.frequency    float starting frequency
 perturb.lacunarity   float octave frequency multiplier
 perturb.persistence  float octave signal decay
@@ -156,7 +156,7 @@ fat glandular buffer noise parameters
 =================== ===== ======================================
 Name                Type  Notes
 =================== ===== ======================================
-buffer.maxDeviation float maximum fraction of distance deviation 
+buffer.maxDeviation float maximum fraction of distance deviation
 buffer.frequency    float starting frequency
 buffer.lacunarity   float octave frequency multiplier
 buffer.persistence  float octave signal decay
@@ -169,7 +169,7 @@ Voronoi segmentation variables
 =============================== ============= ============================================
 Name                            Type          Notes
 =============================== ============= ============================================
-voronoi.fatInFatSeedDensity     float (mm^-3) fat voronoi seed density 
+voronoi.fatInFatSeedDensity     float (mm^-3) fat voronoi seed density
 voronoi.fatInGlandSeedDensity   float (mm^-3) fat voronoi seed in glandular tissue density
 voronoi.glandInGlandSeedDensity float (mm^-3) glandular voronoi seed density
 voronoi.TDLUDeflectMax          float         maximum deflection (fraction of pi)
@@ -345,8 +345,8 @@ vesselBr.child32       float
 vesselBr.child40       float
 vesselBr.child41       float
 vesselBr.child42       float
-vesselBr.minRadFrac    float      minimum starting radius as a fraction of parent end radius 
-vesselBr.maxRadFrac    float      maximum starting radius as a fraction of parent end radius 
+vesselBr.minRadFrac    float      minimum starting radius as a fraction of parent end radius
+vesselBr.maxRadFrac    float      maximum starting radius as a fraction of parent end radius
 vesselBr.radFrac0      float      starting radius as fraction of parent end radius for first child
 vesselBr.minAngle      float      min angle between parent end direction and child start direction
                                   for children after first (fraction of pi radians)

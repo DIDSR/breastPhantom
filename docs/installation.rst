@@ -7,7 +7,7 @@ Operating System
 ----------------
 
 This software has been developed and tested on Debian and Red Hat based Linux distributions.  Compilation is via cmake and should be possible on any UNIX-like operationg system (including MacOS) with minimal
-modification to the build configuration in the provided CMakeLists.txt file, however the following distributions are recommended: 
+modification to the build configuration in the provided CMakeLists.txt file, however the following distributions are recommended:
 
 - Ubuntu 16.04
 - Centos 7.x
