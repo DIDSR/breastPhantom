@@ -19,11 +19,11 @@
 #include <vtkVersion.h>
 #include <vtkSmartPointer.h>
 #include <vtkImageData.h>
-#include <vtkXMLImageDataWriter.h>
-#include <vtkXMLImageDataReader.h>
+
+#include <boost/program_options.hpp>
 
 #include "tissueStruct.hxx"
-#include "artery.hxx"
+
 
 void generate_artery(vtkImageData* breast, boost::program_options::variables_map vm, int* boundBox,
              tissueStruct* tissue, double* sposPtr, double* sdirPtr, double* nipplePos, int seed, int mainSeed, bool firstTree);

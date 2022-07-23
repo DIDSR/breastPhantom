@@ -13,7 +13,11 @@
  *
  */
 
+#include "duct.hxx"
 #include "createDuct.hxx"
+
+#include <vtkVersion.h>
+
 
 using namespace std;
 namespace po = boost::program_options;

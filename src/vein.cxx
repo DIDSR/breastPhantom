@@ -15,6 +15,15 @@
 
 #include "vein.hxx"
 
+#include <algorithm>
+#include <cmath>
+
+#include <omp.h>
+
+#include <vtkVersion.h>
+#include <vtkMath.h>
+
+
 using namespace std;
 namespace po = boost::program_options;
 

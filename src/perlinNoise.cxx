@@ -15,6 +15,10 @@
 
 #include "perlinNoise.hxx"
 
+#include <cstring>
+#include <cmath>
+
+
 double randPerm[256][3] = {
     {0.7321, 0.3079, 0.6076},
     {-0.7627, -0.6454, 0.0418},

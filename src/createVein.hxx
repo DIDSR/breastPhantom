@@ -16,14 +16,12 @@
 #ifndef __CREATEVEIN_HXX__
 #define __CREATEVEIN_HXX__
 
-#include <vtkVersion.h>
-#include <vtkSmartPointer.h>
 #include <vtkImageData.h>
-#include <vtkXMLImageDataWriter.h>
-#include <vtkXMLImageDataReader.h>
+
+#include <boost/program_options.hpp>
 
 #include "tissueStruct.hxx"
-#include "vein.hxx"
+
 
 void generate_vein(vtkImageData* breast, boost::program_options::variables_map vm, int* boundBox,
            tissueStruct* tissue, double* sposPtr, double* sdirPtr, double* nipplePos, int seed, int mainSeed, bool firstTree);

@@ -14,8 +14,15 @@
  */
 
 // function to generate an arterial tree
-
+#include "vein.hxx"
 #include "createVein.hxx"
+
+#include <vtkVersion.h>
+#include <vtkMath.h>
+#include <vtkSmartPointer.h>
+#include <vtkXMLImageDataWriter.h>
+#include <vtkXMLImageDataReader.h>
+
 
 using namespace std;
 namespace po = boost::program_options;

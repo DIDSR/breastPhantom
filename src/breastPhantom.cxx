@@ -15,7 +15,65 @@
 
 // create volumetric breast
 
-#include "breastPhantom.hxx"
+#include <iostream>
+#include <cmath>
+#include <cstdint>
+#include <ctime>
+
+#include <omp.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <zlib.h>
+
+#include <boost/program_options.hpp>
+
+// vtk stuff
+#include <vtkVersion.h>
+#include <vtkSmartPointer.h>
+#include <vtkMath.h>
+#include <vtkPolyData.h>
+#include <vtkCleanPolyData.h>
+#include <vtkVertexGlyphFilter.h>
+#include <vtkPolyDataNormals.h>
+#include <vtkGeometryFilter.h>
+#include <vtkDecimatePro.h>
+#include <vtkTIFFWriter.h>
+#include <vtkFloatArray.h>
+#include <vtkCellArray.h>
+#include <vtkPointData.h>
+#include <vtkSortDataArray.h>
+#include <vtkParametricSpline.h>
+#include <vtkProperty.h>
+#include <vtkTransform.h>
+#include <vtkTransformPolyDataFilter.h>
+#include <vtkSmoothPolyDataFilter.h>
+#include <vtkSurfaceReconstructionFilter.h>
+#include <vtkContourFilter.h>
+#include <vtkReverseSense.h>
+#include <vtkImageData.h>
+#include <vtkFillHolesFilter.h>
+#include <vtkCellLocator.h>
+#include <vtkXMLPolyDataWriter.h>
+#include <vtkXMLImageDataWriter.h>
+#include <vtkXMLImageDataReader.h>
+#include <vtkMetaImageWriter.h>
+#include <vtkPointLocator.h>
+#include <vtkOctreePointLocator.h>
+#include <vtkMinimalStandardRandomSequence.h>
+#include <vtkVector.h>
+
+#include "perlinNoise.hxx"
+#include "duct.hxx"
+#include "createDuct.hxx"
+#include "artery.hxx"
+#include "createArtery.hxx"
+#include "vein.hxx"
+#include "createVein.hxx"
+#include "tissueStruct.hxx"
+
+
+// number of fat lobule Fourier perturbation coefficients
+#define NUMCOEFF 3
 
 namespace po = boost::program_options;
 

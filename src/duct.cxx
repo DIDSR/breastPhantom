@@ -15,6 +15,16 @@
 
 #include "duct.hxx"
 
+#include <algorithm>
+#include <cmath>
+
+#include <omp.h>
+
+#include <vtkVersion.h>
+#include <vtkMath.h>
+#include <vtkVector.h>
+
+
 using namespace std;
 namespace po = boost::program_options;
 

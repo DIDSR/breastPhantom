@@ -16,9 +16,9 @@
 #ifndef __PERLINNOISE_HXX__
 #define __PERLINNOISE_HXX__
 
-#include <boost/random.hpp>
-#include <boost/math/distributions/beta.hpp>
+#include <cstdint>
 #include <boost/program_options.hpp>
+
 
 class perlinNoise{
 

@@ -16,19 +16,14 @@
 #ifndef __VEIN_HXX__
 #define __VEIN_HXX__
 
-#include <cmath>
-#include <omp.h>
-#include <algorithm>
-
-#include <vtkVersion.h>
 #include <vtkImageData.h>
-#include <vtkMath.h>
 
 #include <boost/random.hpp>
 #include <boost/math/distributions/beta.hpp>
 #include <boost/program_options.hpp>
 
 #include "tissueStruct.hxx"
+
 
 // forward declaration
 class veinSeg;

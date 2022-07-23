@@ -16,22 +16,16 @@
 #ifndef __DUCT_HXX__
 #define __DUCT_HXX__
 
-#include <cmath>
-#include <omp.h>
-#include <algorithm>
-
-#include <vtkVersion.h>
 #include <vtkImageData.h>
 #include <vtkPoints.h>
 #include <vtkDoubleArray.h>
-#include <vtkMath.h>
-#include <vtkVector.h>
 
 #include <boost/random.hpp>
 #include <boost/math/distributions/beta.hpp>
 #include <boost/program_options.hpp>
 
 #include "tissueStruct.hxx"
+
 
 // forward declaration
 class ductSeg;

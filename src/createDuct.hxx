@@ -16,13 +16,14 @@
 #ifndef __CREATEDUCT_HXX__
 #define __CREATEDUCT_HXX__
 
-#include <vtkVersion.h>
 #include <vtkImageData.h>
 #include <vtkPoints.h>
 #include <vtkDoubleArray.h>
 
+#include <boost/program_options.hpp>
+
 #include "tissueStruct.hxx"
-#include "duct.hxx"
+
 
 void generate_duct(vtkImageData* breast, boost::program_options::variables_map vm, vtkPoints* TDLUloc, vtkDoubleArray* TDLUattr,
     unsigned char compartmentId, int* boundBox, tissueStruct* tissue, double* sposPtr, double* sdirPtr, int seed);
