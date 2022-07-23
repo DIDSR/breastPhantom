@@ -16,6 +16,8 @@
 #ifndef CREATEVEIN_HXX_
 #define CREATEVEIN_HXX_
 
+#include <vtkVersion.h>
+
 #ifndef __VTKSMARTPOINTER__
     #define __VTKSMARTPOINTER__
     #include <vtkSmartPointer.h>

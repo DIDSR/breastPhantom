@@ -16,6 +16,8 @@
 #ifndef CREATEDUCT_HXX_
 #define CREATEDUCT_HXX_
 
+#include <vtkVersion.h>
+
 #ifndef __VTKIMAGEDATA__
     #define __VTKIMAGEDATA__
     #include <vtkImageData.h>

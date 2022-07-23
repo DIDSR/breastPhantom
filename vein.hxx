@@ -31,6 +31,8 @@
 #include <algorithm>
 #endif
 
+#include <vtkVersion.h>
+
 #ifndef __VTKIMAGEDATA__
 #define __VTKIMAGEDATA__
 #include <vtkImageData.h>

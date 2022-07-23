@@ -319,7 +319,7 @@ int main(int argc, char* argv[]){
     std::string configFile = vm["config"].as<std::string>();
 
     // read configuration file
-    ifstream inConfig(configFile.c_str());
+    std::ifstream inConfig(configFile.c_str());
     if(!inConfig){
         cout << "Can not open configuration file: " << configFile << "\n";
         return(1);

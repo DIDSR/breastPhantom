@@ -16,6 +16,8 @@
 #ifndef CREATEARTERY_HXX_
 #define CREATEARTERY_HXX_
 
+#include <vtkVersion.h>
+
 #ifndef __VTKSMARTPOINTER__
     #define __VTKSMARTPOINTER__
     #include <vtkSmartPointer.h>
