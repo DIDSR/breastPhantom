@@ -41,16 +41,16 @@ if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
 endif()
 
 # Source files
-include_directories("$(PROJECT_SOURCE_DIR)")
+include_directories("$(PROJECT_SOURCE_DIR)/src")
 add_executable(${PROJECT_NAME}
-    breastPhantom.cxx
-    artery.cxx
-    createArtery.cxx
-    duct.cxx
-    createDuct.cxx
-    vein.cxx
-    createVein.cxx
-    perlinNoise.cxx
+    src/breastPhantom.cxx
+    src/artery.cxx
+    src/createArtery.cxx
+    src/duct.cxx
+    src/createDuct.cxx
+    src/vein.cxx
+    src/createVein.cxx
+    src/perlinNoise.cxx
 )
 
 # Linking
