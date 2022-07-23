@@ -81,10 +81,7 @@ unsigned int ductTree::num = 0;
 unsigned int arteryTree::num = 0;
 unsigned int veinTree::num = 0;
 
-int main(int argc, char* argv[]){
-
-    double pi = vtkMath::Pi();
-
+static po::variables_map parse_config(int argc, const char *argv[]) {
     // configuration file variables
     po::options_description baseOpt("base options");
     baseOpt.add_options()
@@ -366,6 +363,7 @@ int main(int argc, char* argv[]){
     // all of the options
     po::options_description all("All options");
     all.add_options()
+        ("help,h", "prints help information")
         ("config,c", po::value<std::string>()->required(), "name of configuration file")
         ;
     all.add(configFileOpt);
@@ -374,17 +372,30 @@ int main(int argc, char* argv[]){
 
     // get configuration filename from command line
     po::store(parse_command_line(argc,argv,all), vm);
-    std::string configFile = vm["config"].as<std::string>();
+    // show help and exit, if asked
+    if (vm.count("help") > 0) {
+        std::cout << all << std::endl;
+        exit(EXIT_SUCCESS);
+    }
+    po::notify(vm);
 
+    std::string configFile = vm["config"].as<std::string>();
     // read configuration file
     std::ifstream inConfig(configFile.c_str());
-    if(!inConfig){
-        cout << "Can not open configuration file: " << configFile << "\n";
-        return(1);
-    } else {
-        po::store(parse_config_file(inConfig, configFileOpt), vm);
-        inConfig.close();
-    };
+    if (!inConfig) {
+        std::cerr << "Could not read configuration file '" << configFile << "'" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    po::store(parse_config_file(inConfig, configFileOpt), vm);
+    inConfig.close();
+
+    po::notify(vm);
+    return vm;
+}
+
+static int run_with_config(const po::variables_map& vm) {
+    double pi = vtkMath::Pi();
 
     // load resolution variables
 
@@ -495,7 +506,7 @@ int main(int argc, char* argv[]){
     sprintf(cfgOutFilename,"%s/p_%d.cfg", outputDir.c_str(),randSeed);
 
     FILE *cfgCopy = fopen(cfgOutFilename,"wt");
-    FILE *cfgRead = fopen(configFile.c_str(),"rt");
+    FILE *cfgRead = fopen(vm["config"].as<std::string>().c_str(),"rt");
 
     int readChar = getc(cfgRead);
     while(readChar != EOF){
@@ -4837,4 +4848,15 @@ int main(int argc, char* argv[]){
     }
 
     return EXIT_SUCCESS;
+}
+
+int main(int argc, const char *argv[]) {
+    try {
+        po::variables_map vm = parse_config(argc, argv);
+        return run_with_config(vm);
+
+    } catch (const std::exception& error) {
+        std::cerr << "Error: " << error.what() << std::endl;
+        return EXIT_FAILURE;
+    }
 }
