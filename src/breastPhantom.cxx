@@ -16,6 +16,8 @@
 // create volumetric breast
 
 #include <iostream>
+#include <system_error>
+#include <cerrno>
 #include <cmath>
 #include <cstdint>
 #include <ctime>
@@ -23,6 +25,7 @@
 #include <omp.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/random.h>
 #include <zlib.h>
 
 #include <boost/program_options.hpp>
@@ -394,6 +397,17 @@ static po::variables_map parse_config(int argc, const char *argv[]) {
     return vm;
 }
 
+
+static unsigned generate_random_seed(void) {
+    unsigned seed;
+    ssize_t bytesRead = getrandom(&seed, sizeof(seed), GRND_RANDOM);
+    if (bytesRead < sizeof(seed)) {
+        throw std::system_error(errno, std::system_category());
+    }
+    return seed;
+}
+
+
 static int run_with_config(const po::variables_map& vm) {
     const double pi = vtkMath::Pi();
 
@@ -453,18 +467,9 @@ static int run_with_config(const po::variables_map& vm) {
 
     // random number generator seed
     // use seed specified in config file, otherwise random seed
-    int randSeed;
-    if(vm.count("base.seed")){
-        // seed specified in configuration file
-        randSeed = vm["base.seed"].as<unsigned int>();
-    } else {
-        // generate random seed
-        FILE *randFile;
-        randFile = fopen("/dev/urandom","r");
-        size_t fread_out;
-        fread_out = fread((char*)(&randSeed), sizeof(int),1,randFile);
-        fclose(randFile);
-    }
+    const unsigned randSeed = (vm.count("base.seed") > 0)
+        ? vm["base.seed"].as<unsigned>()
+        : generate_random_seed();
 
     // output base directory
     std::string outputDir = vm["base.outputDir"].as<std::string>();
@@ -581,7 +586,7 @@ static int run_with_config(const po::variables_map& vm) {
     vtkSmartPointer<vtkMinimalStandardRandomSequence> rgen =
         vtkSmartPointer<vtkMinimalStandardRandomSequence>::New();
 
-    rgen->SetSeed(randSeed);
+    rgen->SetSeed((int) randSeed);
 
     /***********************
     Shape

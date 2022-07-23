@@ -1,9 +1,12 @@
-# CMake output files
+# Build files
 build/
 CMakeFiles/
 CMakeCache.txt
 Makefile
 cmake_install.cmake
+
+# Execution ouput
+output/
 
 # Editors
 .vscode/
