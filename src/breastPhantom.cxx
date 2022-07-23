@@ -395,51 +395,52 @@ static po::variables_map parse_config(int argc, const char *argv[]) {
 }
 
 static int run_with_config(const po::variables_map& vm) {
-    double pi = vtkMath::Pi();
+    const double pi = vtkMath::Pi();
 
     // load resolution variables
 
-    double ures = vm["shape.ures"].as<double>();	// spacing in u-v space
-    double vres = vm["shape.vres"].as<double>();
-    double pointSep = vm["shape.pointSep"].as<double>(); // remove close points
-    double featureAngle = vm["shape.featureAngle"].as<double>(); // angle to preserve when smoothing
-    double targetReduction = vm["shape.targetReduction"].as<double>(); // fraction of triangles to decimate
-    double imgRes = vm["base.imgRes"].as<double>();	// size of image voxels (mm)
-    double skinThick = vm["base.skinThick"].as<double>(); // thickness of skin (mm)
-    std::string breastVoxelFilename = "breastVoxel.vti";
+    const double ures = vm["shape.ures"].as<double>();	// spacing in u-v space
+    const double vres = vm["shape.vres"].as<double>();
+    const double pointSep = vm["shape.pointSep"].as<double>(); // remove close points
+    const double featureAngle = vm["shape.featureAngle"].as<double>(); // angle to preserve when smoothing
+    const double targetReduction = vm["shape.targetReduction"].as<double>(); // fraction of triangles to decimate
+    const double imgRes = vm["base.imgRes"].as<double>();	// size of image voxels (mm)
+    const double skinThick = vm["base.skinThick"].as<double>(); // thickness of skin (mm)
     char outVTIFilename[128];
     char outhdrFilename[128];
     char outgzFilename[128];
 
 
-    double scaleFactor = 35.0;	// scale voxel size to millimeters
+    const double scaleFactor = 35.0;	// scale voxel size to millimeters
 
-    double nippleLen = vm["base.nippleLen"].as<double>();	// length of nipple (mm)
-    double nippleRad = vm["base.nippleRad"].as<double>(); // radius of nipple (mm)
-    double areolaRad = vm["base.areolaRad"].as<double>(); // radius of areola (mm)
+    const double nippleLen = vm["base.nippleLen"].as<double>();	// length of nipple (mm)
+    const double nippleRad = vm["base.nippleRad"].as<double>(); // radius of nipple (mm)
+    const double areolaRad = vm["base.areolaRad"].as<double>(); // radius of areola (mm)
 
-    double voxelVol = imgRes*imgRes*imgRes;	// volume of a voxel (cubic mm)
+    const double voxelVol = imgRes * imgRes * imgRes;	// volume of a voxel (cubic mm)
 
-    tissueStruct tissue;
-
-    tissue.bg = 0;
-    tissue.skin = 2;
-    tissue.nipple = 33;
-    tissue.fat = 1;
-    tissue.cooper = 88;
-    tissue.gland = 29;
-    tissue.TDLU = 95;
-    tissue.duct = 125;
-    tissue.artery = 150;
-    tissue.vein = 225 ;
-    tissue.muscle = 40;
+    tissueStruct tissue = {
+        .bg = 0,
+        .skin = 2,
+        .nipple = 33,
+        .fat = 1,
+        .cooper = 88,
+        .gland = 29,
+        .TDLU = 95,
+        .duct = 125,
+        .artery = 150,
+        .vein = 225 ,
+        .muscle = 40,
+    };
 
     const unsigned char glandBuffer = 222;
     const unsigned char innerVal = 175; // not needed after compartment creation
     const unsigned char boundVal = 50;  // edge of inner breast volume, not needed after skin generation
 
-    const unsigned char compartmentVal[20] = {12, 13, 14, 15, 16,
-                            17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28};
+    const unsigned char compartmentVal[20] = {
+        12, 13, 14, 15, 16, 17, 18, 19, 20,
+        21, 22, 23, 24, 25, 26, 27, 28,
+    };
 
     const unsigned char compMax = 28;	// max compartment value for cooper's ligament
     const unsigned char compMin = 12;
@@ -524,57 +525,57 @@ static int run_with_config(const po::variables_map& vm) {
     // shape parameters
 
     // base shape coefficients
-    double a1b =  vm["shape.a1b"].as<double>();
-    double a1t = vm["shape.a1t"].as<double>();
-    double a2l = vm["shape.a2l"].as<double>();
-    double a2r = vm["shape.a2r"].as<double>();
-    double a3 = vm["shape.a3"].as<double>();
-    double eps1 = vm["shape.eps1"].as<double>();
-    double eps2 = vm["shape.eps2"].as<double>();
+    const double a1b =  vm["shape.a1b"].as<double>();
+    const double a1t = vm["shape.a1t"].as<double>();
+    const double a2l = vm["shape.a2l"].as<double>();
+    const double a2r = vm["shape.a2r"].as<double>();
+    const double a3 = vm["shape.a3"].as<double>();
+    const double eps1 = vm["shape.eps1"].as<double>();
+    const double eps2 = vm["shape.eps2"].as<double>();
 
     // breast side
-    bool leftSide = vm["base.leftBreast"].as<bool>();
+    const bool leftSide = vm["base.leftBreast"].as<bool>();
 
     // ptosis parameters
-    bool doPtosis = vm["shape.doPtosis"].as<bool>();
-    double b0 = vm["shape.ptosisB0"].as<double>();
-    double b1 = vm["shape.ptosisB1"].as<double>();
+    const bool doPtosis = vm["shape.doPtosis"].as<bool>();
+    const double b0 = vm["shape.ptosisB0"].as<double>();
+    const double b1 = vm["shape.ptosisB1"].as<double>();
 
     // turn parameters
-    bool doTurn = vm["shape.doTurn"].as<bool>();
-    double c0 = vm["shape.turnC0"].as<double>();
-    double c1 = vm["shape.turnC1"].as<double>();
+    const bool doTurn = vm["shape.doTurn"].as<bool>();
+    const double c0 = vm["shape.turnC0"].as<double>();
+    const double c1 = vm["shape.turnC1"].as<double>();
 
     // top shape parameters
-    bool doTopShape = vm["shape.doTopShape"].as<bool>();
-    double s0 = vm["shape.topShapeS0"].as<double>();
-    double t0 = vm["shape.topShapeT0"].as<double>();
-    double s1 = vm["shape.topShapeS1"].as<double>();
-    double t1 = vm["shape.topShapeT1"].as<double>();
+    const bool doTopShape = vm["shape.doTopShape"].as<bool>();
+    const double s0 = vm["shape.topShapeS0"].as<double>();
+    const double t0 = vm["shape.topShapeT0"].as<double>();
+    const double s1 = vm["shape.topShapeS1"].as<double>();
+    const double t1 = vm["shape.topShapeT1"].as<double>();
 
     // derived top shape parameters
-    double At = -0.5*t0-3.0*s0-3.0*s1+0.5*t1;
-    double Bt = 1.5*t0+8.0*s0+7.0*s1-t1;
-    double Ct = -1.5*t0-6.0*s0-4.0*s1+0.5*t1;
-    double Dt = 0.5*t0;
-    double Et = s0;
-    double Ft = 1.0;
+    const double At = -0.5*t0-3.0*s0-3.0*s1+0.5*t1;
+    const double Bt = 1.5*t0+8.0*s0+7.0*s1-t1;
+    const double Ct = -1.5*t0-6.0*s0-4.0*s1+0.5*t1;
+    const double Dt = 0.5*t0;
+    const double Et = s0;
+    const double Ft = 1.0;
 
     // flatten side parameters
-    bool doFlattenSide = vm["shape.doFlattenSide"].as<bool>();
-    double g0 = vm["shape.flattenSideG0"].as<double>();
-    double g1 = vm["shape.flattenSideG1"].as<double>();
+    const bool doFlattenSide = vm["shape.doFlattenSide"].as<bool>();
+    const double g0 = vm["shape.flattenSideG0"].as<double>();
+    const double g1 = vm["shape.flattenSideG1"].as<double>();
 
     // derived parameters for flatten side
-    double Af = g1+2.0-2.0*g0;
-    double Bf = -g1-3.0+3.0*g0;
-    double Cf = 0.0;
-    double Df = 1.0;
+    const double Af = g1+2.0-2.0*g0;
+    const double Bf = -g1-3.0+3.0*g0;
+    const double Cf = 0.0;
+    const double Df = 1.0;
 
     // turn top parameters
-    bool doTurnTop = vm["shape.doTurnTop"].as<bool>();
-    double h0 = vm["shape.turnTopH0"].as<double>();
-    double h1 = vm["shape.turnTopH1"].as<double>();
+    const bool doTurnTop = vm["shape.doTurnTop"].as<bool>();
+    const double h0 = vm["shape.turnTopH0"].as<double>();
+    const double h1 = vm["shape.turnTopH1"].as<double>();
 
     // start a random number generator
     vtkSmartPointer<vtkMinimalStandardRandomSequence> rgen =
