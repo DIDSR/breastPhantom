@@ -40,6 +40,10 @@ if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 endif()
 
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+set(CMAKE_ENABLE_EXPORTS OFF)
+
 # Source files
 include_directories("$(PROJECT_SOURCE_DIR)/src")
 add_executable(${PROJECT_NAME}
@@ -55,7 +59,10 @@ add_executable(${PROJECT_NAME}
 
 # Linking
 target_link_libraries(${PROJECT_NAME}
-    PRIVATE z lapack blas ${VTK_LIBRARIES} boost_program_options OpenMP::OpenMP_CXX
+    PRIVATE
+        lapack blas OpenMP::OpenMP_CXX
+        ${VTK_LIBRARIES}
+        boost_program_options boost_iostreams
 )
 if (NOT VTK_MAJOR_VERSION LESS 9)
     vtk_module_autoinit(TARGETS ${PROJECT_NAME} MODULES ${VTK_LIBRARIES})

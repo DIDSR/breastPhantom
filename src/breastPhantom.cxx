@@ -28,9 +28,13 @@
 
 #include <omp.h>
 #include <sys/random.h>
-#include <zlib.h>
 
 #include <boost/program_options.hpp>
+#include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/device/file.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
 
 // vtk stuff
 #include <vtkVersion.h>
@@ -81,6 +85,7 @@
 #define NUMCOEFF 3
 
 namespace fs = std::filesystem;
+namespace io = boost::iostreams;
 namespace po = boost::program_options;
 
 unsigned int ductTree::num = 0;
@@ -4840,19 +4845,26 @@ static int run_with_config(po::variables_map& vm) {
     }
 
     // save gzipped raw
-    gzFile gzf = gzopen(outgzFilename.c_str(), "wb");
+    try {
+        io::filtering_istreambuf in;
+        // set compressor
+        in.push(io::gzip_compressor());
+        // values are written as char
+        const auto valuesPtr = static_cast<const char *>(breast->GetScalarPointer());
+        const long long valuesCount = dim[0] * dim[1] * dim[2];
+        in.push(io::array_source(valuesPtr, valuesPtr + valuesCount));
+        // write to output
+        auto gzf = io::file_sink(outgzFilename, std::ios::out | std::ios::binary);
+        io::copy(in, gzf);
+        // close handles
+        io::close(in);
+        io::close(gzf);
 
-    if(gzf == NULL){
-        cerr << "Unable to open gzip file for writing\n";
-    } else {
-        gzbuffer(gzf, dim[1]*dim[2]);
-        unsigned char *p = static_cast<unsigned char*>(breast->GetScalarPointer());
-        for(int i=0; i<dim[0]; i++){
-            gzwrite(gzf, static_cast<const void*>(p), dim[1]*dim[2]);
-            p += dim[1]*dim[2];
-        }
-
-        gzclose(gzf);
+    } catch (const std::exception& error) {
+        cerr << "Warning: "
+            << "Unable to write gzip file " << outgzFilename.native() << ": "
+            << error.what()
+            << std::endl;
     }
 
     return EXIT_SUCCESS;
