@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
 project(breastPhantom
     LANGUAGES CXX
@@ -30,9 +30,9 @@ endif()
 find_package(OpenMP REQUIRED)
 
 # Optimizations and standards
-set_property(GLOBAL PROPERTY CXX_STANDARD 14)
+set_property(GLOBAL PROPERTY CXX_STANDARD 20)
 set_property(GLOBAL PROPERTY CXX_STANDARD_REQUIRED ON)
-add_compile_options(-std=gnu++14)
+add_compile_options(-std=gnu++20)
 
 set_property(GLOBAL PROPERTY INTERFACE_POSITION_INDEPENDENT_CODE OFF)
 set_property(GLOBAL PROPERTY INTERPROCEDURAL_OPTIMIZATION true)

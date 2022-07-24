@@ -15,6 +15,8 @@
 
 // create volumetric breast
 
+#include <filesystem>
+#include <iomanip>
 #include <iostream>
 #include <system_error>
 #include <cerrno>
@@ -23,8 +25,6 @@
 #include <ctime>
 
 #include <omp.h>
-#include <unistd.h>
-#include <sys/stat.h>
 #include <sys/random.h>
 #include <zlib.h>
 
@@ -78,6 +78,7 @@
 // number of fat lobule Fourier perturbation coefficients
 #define NUMCOEFF 3
 
+namespace fs = std::filesystem;
 namespace po = boost::program_options;
 
 unsigned int ductTree::num = 0;
@@ -386,7 +387,7 @@ static po::variables_map parse_config(int argc, const char *argv[]) {
     // read configuration file
     std::ifstream inConfig(configFile.c_str());
     if (!inConfig) {
-        std::cerr << "Could not read configuration file '" << configFile << "'" << std::endl;
+        std::cerr << "Could not read configuration file " << std::quoted(configFile) << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -398,6 +399,7 @@ static po::variables_map parse_config(int argc, const char *argv[]) {
 }
 
 
+[[gnu::cold]]
 static unsigned generate_random_seed(void) {
     unsigned seed;
     ssize_t bytesRead = getrandom(&seed, sizeof(seed), GRND_RANDOM);
@@ -408,6 +410,7 @@ static unsigned generate_random_seed(void) {
 }
 
 
+[[gnu::hot]]
 static int run_with_config(const po::variables_map& vm) {
     const double pi = vtkMath::Pi();
 
@@ -472,38 +475,32 @@ static int run_with_config(const po::variables_map& vm) {
         : generate_random_seed();
 
     // output base directory
-    std::string outputDir = vm["base.outputDir"].as<std::string>();
+    auto outputDir = fs::directory_entry(vm["base.outputDir"].as<std::string>());
 
     // exists?
-    if(access(outputDir.c_str(),F_OK)){
+    if (!outputDir.exists()) {
         // directory doesn't exist
         // try to create it
-        if(mkdir(outputDir.c_str(),S_IRWXU) == -1){
+        if (!fs::create_directory(outputDir)) {
             // couldn't create directory
-            cerr << "Could not create directory " << outputDir << "\n";
-            cerr << "Exiting...\n";
-            return(1);
+            const auto outputPath = outputDir.path().native();
+            std::cerr << "Could not create directory " << std::quoted(outputPath) << std::endl;
+            std::cerr << "Exiting..." << std::endl;
+            return EXIT_FAILURE;
         }
+        outputDir.refresh();
     }
 
     // is it a directory?
-    struct stat fileInfo;
-
-    stat(outputDir.c_str(), &fileInfo);
-
-    if(S_ISDIR(fileInfo.st_mode)){
+    if (outputDir.is_directory()){
         // it's a directory
         // make it the working directory
-        if(chdir(outputDir.c_str()) == -1){
-            cerr << "Could not access directory " << outputDir << "\n";
-            cerr << "Exiting...\n";
-            return(1);
-        }
+        fs::current_path(outputDir);
     } else {
         // error, not a directory
-        cerr << "Specified path is not a valid directory\n";
-        cerr << "Exiting...\n";
-        return(1);
+        std::cerr << "Specified path is not a valid directory" << std::endl;
+        std::cerr << "Exiting..." << std::endl;
+        return EXIT_FAILURE;
     }
 
     // copy over config file
