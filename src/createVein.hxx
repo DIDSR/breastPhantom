@@ -16,6 +16,8 @@
 #ifndef __CREATEVEIN_HXX__
 #define __CREATEVEIN_HXX__
 
+#include <string>
+
 #include <vtkImageData.h>
 
 #include <boost/program_options.hpp>
@@ -23,8 +25,18 @@
 #include "tissueStruct.hxx"
 
 
-void generate_vein(vtkImageData* breast, boost::program_options::variables_map vm, int* boundBox,
-           tissueStruct* tissue, double* sposPtr, double* sdirPtr, double* nipplePos, int seed, int mainSeed, bool firstTree);
+void generate_vein(
+    vtkImageData* breast,
+    boost::program_options::variables_map vm,
+    int* boundBox,
+    tissueStruct* tissue,
+    double* sposPtr,
+    double* sdirPtr,
+    double* nipplePos,
+    int seed,
+    const std::string& veinFilename,
+    bool firstTree
+);
 
 
 #endif /* __CREATEVEIN_HXX__ */

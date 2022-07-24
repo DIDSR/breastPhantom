@@ -29,13 +29,10 @@ namespace po = boost::program_options;
 
 /* This function creates arterial network, inserts it into the segmented
  * breast and saves the tree */
-void generate_artery(vtkImageData* breast, po::variables_map vm, int* boundBox,
-                 tissueStruct* tissue, double* sposPtr, double* sdirPtr, double* nipplePos, int seed, int mainSeed, bool firstTree){
-
-    char arteryFilename[256];
-    std::string outputDir = vm["base.outputDir"].as<std::string>();
-    sprintf(arteryFilename,"%s/p_%d_arteryFill.vti", outputDir.c_str(), mainSeed);
-
+void generate_artery(
+    vtkImageData* breast, po::variables_map vm, int* boundBox, tissueStruct* tissue,
+    double* sposPtr, double* sdirPtr, double* nipplePos, int seed, const std::string& arteryFilename, bool firstTree
+) {
     double spos[3];
     double sdir[3];
 
@@ -126,7 +123,7 @@ void generate_artery(vtkImageData* breast, po::variables_map vm, int* boundBox,
     } else {
         vtkSmartPointer<vtkXMLImageDataReader> fillReader =
             vtkSmartPointer<vtkXMLImageDataReader>::New();
-        fillReader->SetFileName(arteryFilename);
+        fillReader->SetFileName(arteryFilename.c_str());
         fillReader->Update();
         vtkSmartPointer<vtkImageData> holder =
             vtkSmartPointer<vtkImageData>::New();
@@ -141,7 +138,7 @@ void generate_artery(vtkImageData* breast, po::variables_map vm, int* boundBox,
     vtkSmartPointer<vtkXMLImageDataWriter> fillWriter =
         vtkSmartPointer<vtkXMLImageDataWriter>::New();
 
-    fillWriter->SetFileName(arteryFilename);
+    fillWriter->SetFileName(arteryFilename.c_str());
 #if VTK_MAJOR_VERSION <= 5
     fillWriter->SetInput(myTree.fill);
 #else

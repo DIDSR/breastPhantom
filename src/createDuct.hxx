@@ -25,7 +25,17 @@
 #include "tissueStruct.hxx"
 
 
-void generate_duct(vtkImageData* breast, boost::program_options::variables_map vm, vtkPoints* TDLUloc, vtkDoubleArray* TDLUattr,
-    unsigned char compartmentId, int* boundBox, tissueStruct* tissue, double* sposPtr, double* sdirPtr, int seed);
+void generate_duct(
+    vtkImageData* breast,
+    boost::program_options::variables_map vm,
+    vtkPoints* TDLUloc,
+    vtkDoubleArray* TDLUattr,
+    unsigned char compartmentId,
+    int* boundBox,
+    tissueStruct* tissue,
+    double* sposPtr,
+    double* sdirPtr,
+    int seed
+);
 
 #endif /* __CREATEDUCT_HXX__ */

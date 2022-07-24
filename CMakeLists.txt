@@ -55,7 +55,7 @@ add_executable(${PROJECT_NAME}
 
 # Linking
 target_link_libraries(${PROJECT_NAME}
-    PRIVATE z lapack blas boost_program_options ${VTK_LIBRARIES} ${OpenMP_CXX_FLAGS}
+    PRIVATE z lapack blas ${VTK_LIBRARIES} boost_program_options OpenMP::OpenMP_CXX
 )
 if (NOT VTK_MAJOR_VERSION LESS 9)
     vtk_module_autoinit(TARGETS ${PROJECT_NAME} MODULES ${VTK_LIBRARIES})

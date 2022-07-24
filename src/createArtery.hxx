@@ -16,6 +16,8 @@
 #ifndef __CREATEARTERY_HXX__
 #define __CREATEARTERY_HXX__
 
+#include <string>
+
 #include <vtkVersion.h>
 #include <vtkSmartPointer.h>
 #include <vtkImageData.h>
@@ -25,8 +27,18 @@
 #include "tissueStruct.hxx"
 
 
-void generate_artery(vtkImageData* breast, boost::program_options::variables_map vm, int* boundBox,
-             tissueStruct* tissue, double* sposPtr, double* sdirPtr, double* nipplePos, int seed, int mainSeed, bool firstTree);
+void generate_artery(
+    vtkImageData* breast,
+    boost::program_options::variables_map vm,
+    int* boundBox,
+    tissueStruct* tissue,
+    double* sposPtr,
+    double* sdirPtr,
+    double* nipplePos,
+    int seed,
+    const std::string& arteryFilename,
+    bool firstTree
+);
 
 
 #endif /* __CREATEARTERY_HXX__ */

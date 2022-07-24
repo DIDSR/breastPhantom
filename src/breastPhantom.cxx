@@ -18,6 +18,7 @@
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <string>
 #include <system_error>
 #include <cerrno>
 #include <cmath>
@@ -85,6 +86,8 @@ unsigned int ductTree::num = 0;
 unsigned int arteryTree::num = 0;
 unsigned int veinTree::num = 0;
 
+
+[[gnu::cold]]
 static po::variables_map parse_config(int argc, const char *argv[]) {
     // configuration file variables
     po::options_description baseOpt("base options");
@@ -411,7 +414,7 @@ static unsigned generate_random_seed(void) {
 
 
 [[gnu::hot]]
-static int run_with_config(const po::variables_map& vm) {
+static int run_with_config(po::variables_map& vm) {
     const double pi = vtkMath::Pi();
 
     // load resolution variables
@@ -423,10 +426,6 @@ static int run_with_config(const po::variables_map& vm) {
     const double targetReduction = vm["shape.targetReduction"].as<double>(); // fraction of triangles to decimate
     const double imgRes = vm["base.imgRes"].as<double>();	// size of image voxels (mm)
     const double skinThick = vm["base.skinThick"].as<double>(); // thickness of skin (mm)
-    char outVTIFilename[128];
-    char outhdrFilename[128];
-    char outgzFilename[128];
-
 
     const double scaleFactor = 35.0;	// scale voxel size to millimeters
 
@@ -476,8 +475,6 @@ static int run_with_config(const po::variables_map& vm) {
 
     // output base directory
     auto outputDir = fs::directory_entry(vm["base.outputDir"].as<std::string>());
-
-    // exists?
     if (!outputDir.exists()) {
         // directory doesn't exist
         // try to create it
@@ -490,25 +487,33 @@ static int run_with_config(const po::variables_map& vm) {
         }
         outputDir.refresh();
     }
-
     // is it a directory?
-    if (outputDir.is_directory()){
-        // it's a directory
-        // make it the working directory
-        fs::current_path(outputDir);
-    } else {
+    if (!outputDir.is_directory()){
         // error, not a directory
         std::cerr << "Specified path is not a valid directory" << std::endl;
         std::cerr << "Exiting..." << std::endl;
         return EXIT_FAILURE;
     }
 
+    // basename for output files
+    const auto outputBaseName = (std::stringstream() << "p_" << randSeed).str();
+    // config copy
+    const auto cfgOutFilename = outputDir.path() / (outputBaseName + ".cfg");
+    // VTI files
+    const auto outVTIFilename = outputDir.path() / (outputBaseName + ".vti");
+    const auto outArteryVTIFilename = outputDir.path() / (outputBaseName + "_arteryFill.vti");
+    const auto outVeinVTIFilename = outputDir.path() / (outputBaseName + "_veinFill.vti");
+    // MHD descriptor
+    const auto outhdrFilename = outputDir.path() / (outputBaseName + ".mhd");
+    // RAW files
+    const auto outrawFilename = outputDir.path() / (outputBaseName + ".raw");
+    const auto outgzFilename = outputDir.path() / (outputBaseName + ".raw.gz"); // .zraw?
+    // File to store duct locations
+    const auto TDLUlocFilename = outputDir.path() / (outputBaseName + ".loc");
+
     // copy over config file
 
-    char cfgOutFilename[128];
-    sprintf(cfgOutFilename,"%s/p_%d.cfg", outputDir.c_str(),randSeed);
-
-    FILE *cfgCopy = fopen(cfgOutFilename,"wt");
+    FILE *cfgCopy = fopen(cfgOutFilename.c_str(),"wt");
     FILE *cfgRead = fopen(vm["config"].as<std::string>().c_str(),"rt");
 
     int readChar = getc(cfgRead);
@@ -518,12 +523,6 @@ static int run_with_config(const po::variables_map& vm) {
     }
     fclose(cfgCopy);
     fclose(cfgRead);
-
-    sprintf(outVTIFilename,"%s/p_%d.vti", outputDir.c_str(),randSeed);
-    //sprintf(outrawFilename,"%s/p_%d.zraw", outputDir.c_str(),randSeed);
-    sprintf(outhdrFilename,"%s/p_%d.mhd", outputDir.c_str(),randSeed);
-    sprintf(outgzFilename,"%s/p_%d.raw.gz", outputDir.c_str(),randSeed);
-
     // shape parameters
 
     // base shape coefficients
@@ -3334,10 +3333,6 @@ static int run_with_config(const po::variables_map& vm) {
 
     // create duct network
 
-    // File to store duct locations
-    char TDLUlocFilename[128];
-    sprintf(TDLUlocFilename, "%s/p_%d.loc", outputDir.c_str(), randSeed);
-
     // data structure to store TDLU locations and attributes
     // TDLUs are ovoid
     // attributes are main axis radius, off axis radius, main axis direction (unit vector)
@@ -3497,7 +3492,7 @@ static int run_with_config(const po::variables_map& vm) {
 
     // write TDLU locations to .loc file
     FILE *TDLUlocFile;
-    TDLUlocFile = fopen(TDLUlocFilename, "w");
+    TDLUlocFile = fopen(TDLUlocFilename.c_str(), "w");
 
     for(int i=0; i<keepComp; i++){
         vtkIdType numTDLU = TDLUloc[i]->GetNumberOfPoints();
@@ -4770,13 +4765,9 @@ static int run_with_config(const po::variables_map& vm) {
         int arterySeed = static_cast<int>(round(rgen->GetRangeValue(0.0, 1.0)*2147483648));
         rgen->Next();
 
-        if(i == 0){
-            generate_artery(breast, vm, internalExtentVox, &tissue,
-                    arteryStartPosList[i], arteryStartDirList[i], nipplePos, arterySeed, randSeed, true);
-        } else {
-            generate_artery(breast, vm, internalExtentVox, &tissue,
-                    arteryStartPosList[i], arteryStartDirList[i], nipplePos, arterySeed, randSeed, false);
-        }
+        bool firstTree = (i == 0);
+        generate_artery(breast, vm, internalExtentVox, &tissue, arteryStartPosList[i],
+            arteryStartDirList[i], nipplePos, arterySeed, outArteryVTIFilename.native(), firstTree);
     }
 
     // create veins
@@ -4785,13 +4776,9 @@ static int run_with_config(const po::variables_map& vm) {
         int veinSeed = static_cast<int>(round(rgen->GetRangeValue(0.0, 1.0)*2147483648));
         rgen->Next();
 
-        if(i == 0){
-            generate_vein(breast, vm, internalExtentVox, &tissue,
-                veinStartPosList[i], veinStartDirList[i], nipplePos, veinSeed, randSeed, true);
-        } else {
-            generate_vein(breast, vm, internalExtentVox, &tissue,
-                veinStartPosList[i], veinStartDirList[i], nipplePos, veinSeed, randSeed, false);
-        }
+        bool firstTree = (i == 0);
+        generate_vein(breast, vm, internalExtentVox, &tissue, veinStartPosList[i],
+            veinStartDirList[i], nipplePos, veinSeed, outVeinVTIFilename.native(), firstTree);
     }
 
 
@@ -4803,7 +4790,7 @@ static int run_with_config(const po::variables_map& vm) {
     vtkSmartPointer<vtkXMLImageDataWriter> writerSeg5 =
         vtkSmartPointer<vtkXMLImageDataWriter>::New();
 
-    writerSeg5->SetFileName(outVTIFilename);
+    writerSeg5->SetFileName(outVTIFilename.c_str());
 #if VTK_MAJOR_VERSION <= 5
     writerSeg5->SetInput(breast);
 #else
@@ -4812,7 +4799,7 @@ static int run_with_config(const po::variables_map& vm) {
     writerSeg5->Write();
 
     // save metaimage header
-    FILE *hdrFile = fopen(outhdrFilename, "w");
+    FILE *hdrFile = fopen(outhdrFilename.c_str(), "w");
 
     if(hdrFile == NULL){
         cerr << "Unable to open mhd file for writing\n";
@@ -4835,7 +4822,7 @@ static int run_with_config(const po::variables_map& vm) {
     }
 
     // save gzipped raw
-    gzFile gzf = gzopen(outgzFilename, "wb");
+    gzFile gzf = gzopen(outgzFilename.c_str(), "wb");
 
     if(gzf == NULL){
         cerr << "Unable to open gzip file for writing\n";
@@ -4852,6 +4839,7 @@ static int run_with_config(const po::variables_map& vm) {
 
     return EXIT_SUCCESS;
 }
+
 
 int main(int argc, const char *argv[]) {
     try {
