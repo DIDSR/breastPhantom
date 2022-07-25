@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+include(FetchContent)
 
 project(breastPhantom
     LANGUAGES CXX
@@ -53,6 +54,14 @@ endif()
 # OpenMP
 find_package(OpenMP REQUIRED)
 
+# spdlog (logging library)
+FetchContent_Declare(
+    spdlog
+    GIT_REPOSITORY https://github.com/gabime/spdlog.git
+    GIT_TAG        76fb40d95455f249bd70824ecfcae7a8f0930fa3 # v1.10.0
+)
+FetchContent_MakeAvailable(spdlog)
+
 # Optimizations and standards
 set_property(GLOBAL PROPERTY CXX_STANDARD 20)
 set_property(GLOBAL PROPERTY CXX_STANDARD_REQUIRED ON)
@@ -87,6 +96,7 @@ target_link_libraries(${PROJECT_NAME}
         lapack blas OpenMP::OpenMP_CXX
         ${VTK_LIBRARIES}
         boost_program_options boost_iostreams
+        spdlog::spdlog_header_only
 )
 if (NOT VTK_MAJOR_VERSION LESS 9)
     vtk_module_autoinit(
