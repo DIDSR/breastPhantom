@@ -471,6 +471,8 @@ static unsigned generate_random_seed(void) {
     if (bytesRead < sizeof(seed)) {
         throw std::system_error(errno, std::system_category());
     }
+
+    spdlog::info("Using generated random seed {}", seed);
     return seed;
 }
 
@@ -536,9 +538,11 @@ static int run_with_config(const po::variables_map& vm) {
 
     // random number generator seed
     // use seed specified in config file, otherwise random seed
-    const unsigned randSeed = (vm.count("base.seed") > 0)
-        ? vm["base.seed"].as<unsigned>()
-        : generate_random_seed();
+    const unsigned randSeed
+        = vm.contains("base.seed")
+            ? vm["base.seed"].as<unsigned>()
+            : generate_random_seed();
+    spdlog::trace("randSeed={}", randSeed);
 
     // output base directory
     auto outputDir = fs::directory_entry(vm["base.outputDir"].as<std::string>());
@@ -558,6 +562,7 @@ static int run_with_config(const po::variables_map& vm) {
         spdlog::critical("Specified path {} is not a valid directory", outputDir.path());
         return EXIT_FAILURE;
     }
+    spdlog::debug("Using specified outputDir {}", outputDir.path());
 
     // basename for output files
     const auto outputBaseName = str(std::stringstream() << "p_" << randSeed);
@@ -4409,7 +4414,7 @@ static int run_with_config(const po::variables_map& vm) {
         }
         // update ligamented frac
         ligamentedFrac = static_cast<double>(ligedVoxels)/static_cast<double>(fatVoxels+glandVoxels);
-        spdlog::info("Lig {}, Ligamented fraction = ", fltry, ligamentedFrac);
+        // spdlog::info("Lig {}, Ligamented fraction = {}", fltry, ligamentedFrac);
     }
 
     // convert remaining ufat and ugland
@@ -4858,10 +4863,30 @@ static int run_with_config(const po::variables_map& vm) {
 }
 
 
+[[gnu::cold]]
+static std::string join(const auto& args, const std::string &sep = " ") {
+    auto stream = std::stringstream();
+    if (!args.empty()) {
+        stream << args[0];
+    }
+    for (unsigned i = 1; i < args.size(); i++) {
+        stream << sep << args[i];
+    }
+    return stream.str();
+}
+
+
 int main(int argc, const char *argv[]) {
     try {
+#ifndef NDEBUG
+        spdlog::set_level(spdlog::level::debug);
+#endif
         const auto args = std::span(argv, argv + argc);
+        spdlog::debug("Invoked as: {}", join(args));
+
         const auto vm = parse_config(args);
+        spdlog::debug("Configuration completed");
+
         return run_with_config(vm);
 
     } catch (const std::exception& error) {
