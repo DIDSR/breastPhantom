@@ -19,6 +19,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <span>
 #include <string>
 #include <system_error>
 #include <cerrno>
@@ -93,7 +94,24 @@ unsigned int veinTree::num = 0;
 
 
 [[gnu::cold]]
-static po::variables_map parse_config(int argc, const char *argv[]) {
+static bool show_full_help(const std::span<const char *>& args) {
+    bool contains_long_help = false;
+    bool contains_short_help = false;
+
+    for (unsigned i = 1; i < args.size(); i++) {
+        const auto arg = std::string_view(args[i]);
+        if (arg == "--help") {
+            contains_long_help = true;
+        } else if (arg == "-h") {
+            contains_short_help = true;
+        }
+    }
+    return contains_long_help || !contains_short_help;
+}
+
+
+[[gnu::cold]]
+static po::variables_map parse_config(const std::span<const char *>& args) {
     // configuration file variables
     po::options_description baseOpt("base options");
     baseOpt.add_options()
@@ -372,21 +390,26 @@ static po::variables_map parse_config(int argc, const char *argv[]) {
     configFileOpt.add(voronOpt).add(perlinOpt).add(boundaryOpt);
     configFileOpt.add(bufferOpt).add(perturbOpt).add(ligOpt);
 
-    // all of the options
-    po::options_description all("All options");
-    all.add_options()
-        ("help,h", "prints help information")
+    // options specific to the command line
+    po::options_description cmdLineOpt("Command line options");
+    cmdLineOpt.add_options()
+        ("help,h", "prints help information (use --help for all the options)")
         ("config,c", po::value<std::string>()->required(), "name of configuration file")
         ;
+
+    // all of the options
+    po::options_description all("All options");
+    all.add(cmdLineOpt);
     all.add(configFileOpt);
 
     po::variables_map vm;
-
     // get configuration filename from command line
-    po::store(parse_command_line(argc,argv,all), vm);
+    po::store(parse_command_line(args.size(), args.data(), all), vm);
+
     // show help and exit, if asked
-    if (vm.count("help") > 0) {
-        std::cout << all << std::endl;
+    if (vm.contains("help")) {
+        const auto& helpOptions = show_full_help(args) ? all : cmdLineOpt;
+        std::cout << helpOptions << std::endl;
         exit(EXIT_SUCCESS);
     }
     po::notify(vm);
@@ -424,7 +447,7 @@ static inline std::string str(const auto& stream) {
 
 
 [[gnu::hot]]
-static int run_with_config(po::variables_map& vm) {
+static int run_with_config(const po::variables_map& vm) {
     const double pi = vtkMath::Pi();
 
     // load resolution variables
@@ -4809,7 +4832,8 @@ static int run_with_config(po::variables_map& vm) {
 
 int main(int argc, const char *argv[]) {
     try {
-        po::variables_map vm = parse_config(argc, argv);
+        const auto args = std::span(argv, argv + argc);
+        const auto vm = parse_config(args);
         return run_with_config(vm);
 
     } catch (const std::exception& error) {
