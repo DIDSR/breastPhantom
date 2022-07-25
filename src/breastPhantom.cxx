@@ -16,6 +16,7 @@
 // create volumetric breast
 
 #include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -480,8 +481,7 @@ static int run_with_config(po::variables_map& vm) {
         // try to create it
         if (!fs::create_directory(outputDir)) {
             // couldn't create directory
-            const auto outputPath = outputDir.path().native();
-            std::cerr << "Could not create directory " << std::quoted(outputPath) << std::endl;
+            std::cerr << "Could not create directory " << outputDir.path() << std::endl;
             std::cerr << "Exiting..." << std::endl;
             return EXIT_FAILURE;
         }
@@ -512,17 +512,17 @@ static int run_with_config(po::variables_map& vm) {
     const auto TDLUlocFilename = outputDir.path() / (outputBaseName + ".loc");
 
     // copy over config file
+    try {
+        const auto configFilename = vm["config"].as<std::string>();
+        fs::copy_file(configFilename, cfgOutFilename);
 
-    FILE *cfgCopy = fopen(cfgOutFilename.c_str(),"wt");
-    FILE *cfgRead = fopen(vm["config"].as<std::string>().c_str(),"rt");
-
-    int readChar = getc(cfgRead);
-    while(readChar != EOF){
-        putc(readChar, cfgCopy);
-        readChar = getc(cfgRead);
+    } catch (const std::exception& error) {
+        cerr << "Warning: "
+            << "Unable to write config file " << cfgOutFilename << ": "
+            << error.what()
+            << std::endl;
     }
-    fclose(cfgCopy);
-    fclose(cfgRead);
+
     // shape parameters
 
     // base shape coefficients
@@ -3491,19 +3491,22 @@ static int run_with_config(po::variables_map& vm) {
     }
 
     // write TDLU locations to .loc file
-    FILE *TDLUlocFile;
-    TDLUlocFile = fopen(TDLUlocFilename.c_str(), "w");
+    {
+        auto TDLUlocFile = std::ofstream(TDLUlocFilename, std::ios::out | std::ios::trunc);
+        TDLUlocFile.exceptions(std::ios::badbit | std::ios::failbit);
+        TDLUlocFile << std::scientific << std::uppercase;
 
-    for(int i=0; i<keepComp; i++){
-        vtkIdType numTDLU = TDLUloc[i]->GetNumberOfPoints();
-        double myPoint[3];
-        for(int j=0; j<numTDLU; j++){
-            TDLUloc[i]->GetPoint(j, myPoint);
-            fprintf(TDLUlocFile, "%E,%E,%E\n", myPoint[0], myPoint[1], myPoint[2]);
+        for (unsigned i = 0; i < keepComp; i++) {
+            vtkIdType numTDLU = TDLUloc[i]->GetNumberOfPoints();
+
+            for (vtkIdType j = 0; j < numTDLU; j++) {
+                double myPoint[3];
+                TDLUloc[i]->GetPoint(j, myPoint);
+                TDLUlocFile << myPoint[0] << ',' << myPoint[1] << ',' << myPoint[2] << std::endl;
+            }
         }
+        TDLUlocFile.close();
     }
-
-    fclose(TDLUlocFile);
 
     // ducts/TDLUs complete
 
@@ -4799,26 +4802,41 @@ static int run_with_config(po::variables_map& vm) {
     writerSeg5->Write();
 
     // save metaimage header
-    FILE *hdrFile = fopen(outhdrFilename.c_str(), "w");
+    try {
+        auto hdrFile = std::ofstream(outhdrFilename, std::ios::out | std::ios::trunc);
+        hdrFile.exceptions(std::ios::badbit | std::ios::failbit);
+        hdrFile << std::fixed;
 
-    if(hdrFile == NULL){
-        cerr << "Unable to open mhd file for writing\n";
-    } else {
-        fprintf(hdrFile, "ObjectType = Image\n");
-        fprintf(hdrFile, "NDims = 3\n");
-        fprintf(hdrFile, "BinaryData = True\n");
-        fprintf(hdrFile, "BinaryDataByteOrderMSB = False\n");
-        fprintf(hdrFile, "CompressedData = False\n");
-        fprintf(hdrFile, "TransformMatrix = 1 0 0 0 1 0 0 0 1\n");
-        fprintf(hdrFile, "Offset = %6.4f %6.4f %6.4f\n", origin[0], origin[1], origin[2]);
-        fprintf(hdrFile, "CenterOfRotation = 0 0 0\n");
-        fprintf(hdrFile, "ElementSpacing = %6.4f %6.4f %6.4f\n", spacing[0], spacing[1], spacing[2]);
-        fprintf(hdrFile, "DimSize = %d %d %d\n", dim[0], dim[1], dim[2]);
-        fprintf(hdrFile, "AnatomicalOrientation = ???\n");
-        fprintf(hdrFile, "ElementType = MET_UCHAR\n");
-        fprintf(hdrFile, "ObjectType = Image\n");
-        fprintf(hdrFile, "ElementDataFile = p_%d.raw\n", randSeed);
-        fclose(hdrFile);
+        hdrFile << "NDims = 3" << std::endl;
+        hdrFile << "BinaryData = True" << std::endl;
+        hdrFile << "BinaryDataByteOrderMSB = False" << std::endl;
+        hdrFile << "CompressedData = False" << std::endl;
+        hdrFile << "TransformMatrix = 1 0 0 0 1 0 0 0 1" << std::endl;
+        hdrFile << "Offset ="
+            << " " << std::setw(6) << std::setprecision(4) << origin[0]
+            << " " << std::setw(6) << std::setprecision(4) << origin[1]
+            << " " << std::setw(6) << std::setprecision(4) << origin[2]
+            << std::endl;
+        hdrFile << "CenterOfRotation = 0 0 0" << std::endl;
+        hdrFile << "ElementSpacing ="
+            << " " << std::setw(6) << std::setprecision(4) << spacing[0]
+            << " " << std::setw(6) << std::setprecision(4) << spacing[1]
+            << " " << std::setw(6) << std::setprecision(4) << spacing[2]
+            << std::endl;
+        hdrFile << "DimSize ="
+            << " " << dim[0] << " " << dim[1] << " " << dim[2]
+            << std::endl;
+        hdrFile << "AnatomicalOrientation = ???" << std::endl;
+        hdrFile << "ElementType = MET_UCHAR" << std::endl;
+        hdrFile << "ObjectType = Image" << std::endl;
+        hdrFile << "ElementDataFile = " << outrawFilename.filename().native() << std::endl;
+
+        hdrFile.close();
+    } catch (const std::exception& error) {
+        cerr << "Warning: "
+            << "Unable to write HDR file " << outhdrFilename << ": "
+            << error.what()
+            << std::endl;
     }
 
     // save gzipped raw
