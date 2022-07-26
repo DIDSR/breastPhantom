@@ -20,28 +20,27 @@
 #include <boost/program_options.hpp>
 
 
-class perlinNoise{
+class perlinNoise final {
+    using variables_map = boost::program_options::variables_map;
 
 private:
     double frequency;
     double lacunarity;
     double persistence;
-    int numOctaves;
+    unsigned numOctaves;
     int32_t seed;
-    int32_t xNoiseGen,yNoiseGen,zNoiseGen,seedNoiseGen,shiftNoiseGen;
-    double makeInt32Range(double x);
-    double pInterp(double x);
-    double linInterp(double lbound, double rbound, double x);
-    double coherentNoise(double x, double y, double z, int32_t mySeed);
-    double gradientNoise(double x, double y, double z,
-                     int32_t ia, int32_t ib, int32_t ic, int32_t mySeed);
+    int32_t xNoiseGen, yNoiseGen, zNoiseGen, seedNoiseGen, shiftNoiseGen;
 
 public:
-    double getNoise(double* r);
-    void setSeed(int32_t inSeed);
-    perlinNoise(boost::program_options::variables_map vm, int32_t inSeed, const char* type);
-    perlinNoise(boost::program_options::variables_map vm, int32_t inSeed, double freq, double lac, double pers, int oct);
-    perlinNoise(boost::program_options::variables_map vm, const char* type);
+    perlinNoise(const variables_map &vm, int32_t inSeed, double freq, double lac, double pers, unsigned oct);
+    perlinNoise(const variables_map &vm, int32_t inSeed, const char type[]);
+    perlinNoise(const variables_map &vm, const char type[]);
+
+    inline void setSeed(int32_t inSeed) {
+        seed = inSeed;
+    }
+
+    double getNoise(const double r[3]) const;
 };
 
 #endif /* __PERLINNOISE_HXX__ */

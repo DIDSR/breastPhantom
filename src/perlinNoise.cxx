@@ -19,7 +19,7 @@
 #include <cmath>
 
 
-double randPerm[256][3] = {
+static const double randPerm[256][3] = {
     {0.7321, 0.3079, 0.6076},
     {-0.7627, -0.6454, 0.0418},
     {-0.6154, 0.7791, 0.1197},
@@ -278,173 +278,167 @@ double randPerm[256][3] = {
     {-0.2747, 0.9577, 0.0858}
 };
 
-perlinNoise::perlinNoise(boost::program_options::variables_map vm, int32_t inSeed, const char* type){
+static std::string concat(const char type[], const char value[]) {
+    auto result = std::string(type);
+    result += '.';
+    result += value;
+    return result;
+}
 
-  // read values from options
-  char varName[80];
-  strcpy(varName, type);
-  strcat(varName, ".frequency");
-  frequency = vm[varName].as<double>();
-  strcpy(varName, type);
-  strcat(varName, ".lacunarity");
-  lacunarity = vm[varName].as<double>();
-  strcpy(varName, type);
-  strcat(varName, ".persistence");
-  persistence = vm[varName].as<double>();
+static double get_frequency(const boost::program_options::variables_map &vm, const char varName[]) {
+    return vm[concat(varName, "frequency")].as<double>();
+}
 
-  numOctaves = vm["perlin.numOctaves"].as<int>();
-  xNoiseGen = (int32_t)vm["perlin.xNoiseGen"].as<int>();
-  yNoiseGen = (int32_t)vm["perlin.yNoiseGen"].as<int>();
-  zNoiseGen = (int32_t)vm["perlin.zNoiseGen"].as<int>();
-  seedNoiseGen = (int32_t)vm["perlin.seedNoiseGen"].as<int>();
-  shiftNoiseGen = (int32_t)vm["perlin.shiftNoiseGen"].as<int>();
-  seed = inSeed;
+static double get_lacunarity(const boost::program_options::variables_map &vm, const char varName[]) {
+    return vm[concat(varName, "lacunarity")].as<double>();
+}
+
+static double get_persistence(const boost::program_options::variables_map &vm, const char varName[]) {
+    return vm[concat(varName, "persistence")].as<double>();
+}
+
+perlinNoise::perlinNoise(const variables_map &vm, int32_t inSeed, double freq, double lac, double pers, unsigned oct) {
+    frequency = freq;
+    lacunarity = lac;
+    persistence = pers;
+    numOctaves = oct;
+    seed = inSeed;
+    xNoiseGen = (int32_t) vm["perlin.xNoiseGen"].as<int>();
+    yNoiseGen = (int32_t) vm["perlin.yNoiseGen"].as<int>();
+    zNoiseGen = (int32_t) vm["perlin.zNoiseGen"].as<int>();
+    seedNoiseGen = (int32_t) vm["perlin.seedNoiseGen"].as<int>();
+    shiftNoiseGen = (int32_t) vm["perlin.shiftNoiseGen"].as<int>();
+}
+
+perlinNoise::perlinNoise(const variables_map &vm, int32_t inSeed, const char type[]) :
+    perlinNoise(vm, inSeed,
+        get_frequency(vm, type),
+        get_lacunarity(vm, type),
+        get_persistence(vm, type),
+        vm["perlin.numOctaves"].as<unsigned>()
+    ) { }
+
+perlinNoise::perlinNoise(const variables_map &vm, const char type[]) :
+    // default seed
+    perlinNoise(vm, 344, type) { }
+
+[[gnu::const, gnu::hot]]
+static double makeInt32Range(double x) {
+    if (x >= 1073741824.0) {
+        return 2.0 * fmod(x, 1073741824.0) - 1073741824.0;
+    } else if (x <= -1073741824.0) {
+        return 2.0 * fmod(x, 1073741824.0) + 1073741824.0;
+    } else {
+        return x;
+    }
+}
+
+[[gnu::const, gnu::hot]]
+static double pInterp(double x) {
+    const double x3 = x*x*x;
+    return 6.0 * x3*x*x - 15.0 * x3*x + 10.0 * x3;
+}
+
+[[gnu::const, gnu::hot]]
+static double linInterp(double lbound, double rbound, double x) {
+    return (1.0 - x)*lbound + x*rbound;
+}
+
+struct NoiseParams {
+    int32_t xNoiseGen, yNoiseGen, zNoiseGen, seedNoiseGen, shiftNoiseGen;
 };
 
-perlinNoise::perlinNoise(boost::program_options::variables_map vm, const char* type){
+[[gnu::const, gnu::hot]]
+static double gradientNoise(
+    const NoiseParams &n, int32_t seed,
+    double x, double y, double z,
+    int32_t ia, int32_t ib, int32_t ic
+) {
+    int32_t vectorInd = n.xNoiseGen * ia + n.yNoiseGen*ib + n.zNoiseGen*ic + n.seedNoiseGen*seed;
+    vectorInd &= 0xffffffff;
+    vectorInd ^= (vectorInd >> n.shiftNoiseGen);
+    vectorInd &= 0xff;
 
-  // read values from options
-  char varName[80];
-  strcpy(varName, type);
-  strcat(varName, ".frequency");
-  frequency = vm[varName].as<double>();
-  strcpy(varName, type);
-  strcat(varName, ".lacunarity");
-  lacunarity = vm[varName].as<double>();
-  strcpy(varName, type);
-  strcat(varName, ".persistence");
-  persistence = vm[varName].as<double>();
+    const double xGrad = randPerm[vectorInd][0];
+    const double yGrad = randPerm[vectorInd][1];
+    const double zGrad = randPerm[vectorInd][2];
 
-  numOctaves = vm["perlin.numOctaves"].as<int>();
-  xNoiseGen = (int32_t)vm["perlin.xNoiseGen"].as<int>();
-  yNoiseGen = (int32_t)vm["perlin.yNoiseGen"].as<int>();
-  zNoiseGen = (int32_t)vm["perlin.zNoiseGen"].as<int>();
-  seedNoiseGen = (int32_t)vm["perlin.seedNoiseGen"].as<int>();
-  shiftNoiseGen = (int32_t)vm["perlin.shiftNoiseGen"].as<int>();
-  seed = 334;	// default seed
+    const double dx = x - (double) ia;
+    const double dy = y - (double) ib;
+    const double dz = z - (double) ic;
+
+    return (xGrad*dx + yGrad*dy + zGrad*dz) * 2.12;
 };
 
-perlinNoise::perlinNoise(boost::program_options::variables_map vm, int32_t inSeed, double freq, double lac, double pers, int oct){
-  frequency = freq;
-  lacunarity = lac;
-  persistence = pers;
-  numOctaves = oct;
-  seed = inSeed;
-  xNoiseGen = (int32_t)vm["perlin.xNoiseGen"].as<int>();
-  yNoiseGen = (int32_t)vm["perlin.yNoiseGen"].as<int>();
-  zNoiseGen = (int32_t)vm["perlin.zNoiseGen"].as<int>();
-  seedNoiseGen = (int32_t)vm["perlin.seedNoiseGen"].as<int>();
-  shiftNoiseGen = (int32_t)vm["perlin.shiftNoiseGen"].as<int>();
+[[gnu::const, gnu::hot]]
+static double coherentNoise(const NoiseParams &n, double x, double y, double z, int32_t seed) {
+
+    // make integer coordinate surrounding cube
+    const int32_t xlb = (x > 0.0 ? (int32_t)x : (int32_t)x - 1);
+    const int32_t xub = xlb + 1;
+    const int32_t ylb = (y > 0.0 ? (int32_t)y : (int32_t)y - 1);
+    const int32_t yub = ylb + 1;
+    const int32_t zlb = (z > 0.0 ? (int32_t)z : (int32_t)z - 1);
+    const int32_t zub = zlb + 1;
+
+    // interpolation based on location in cube
+    const double xInterp = pInterp(x - (double)xlb);
+    const double yInterp = pInterp(y - (double)ylb);
+    const double zInterp = pInterp(z - (double)zlb);
+
+    // calculate gradient noise at cube points and interpolate to target location
+    double na,nb;
+    double ix0,ix1,iy0,iy1;
+
+    na = gradientNoise(n, seed, x, y, z, xlb, ylb, zlb);
+    nb = gradientNoise(n, seed, x, y, z, xub, ylb, zlb);
+    ix0 = linInterp(na, nb, xInterp);
+    na = gradientNoise(n, seed, x, y, z, xlb, yub, zlb);
+    nb = gradientNoise(n, seed, x, y, z, xub, yub, zlb);
+    ix1 = linInterp(na, nb, xInterp);
+    iy0 = linInterp(ix0, ix1, yInterp);
+    na = gradientNoise(n, seed, x, y, z, xlb, ylb, zub);
+    nb = gradientNoise(n, seed, x, y, z, xub, ylb, zub);
+    ix0 = linInterp(na, nb, xInterp);
+    na = gradientNoise(n, seed, x, y, z, xlb, yub, zub);
+    nb = gradientNoise(n, seed, x, y, z, xub, yub, zub);
+    ix1 = linInterp(na, nb, xInterp);
+    iy1 = linInterp(ix0, ix1, yInterp);
+
+    return linInterp(iy0, iy1, zInterp);
 }
 
-inline double perlinNoise::makeInt32Range(double x){
-  if(x >= 1073741824.0){
-    return (2.0*fmod(x, 1073741824.0)) - 1073741824.0;
-  } else if (x <= -1073741824.0){
-    return (2.0*fmod(x, 1073741824.0)) + 1073741824.0;
-  } else {
-    return x;
-  }
-}
+double perlinNoise::getNoise(const double r[3]) const {
+    const NoiseParams data = {
+        .xNoiseGen = xNoiseGen,
+        .yNoiseGen = yNoiseGen,
+        .zNoiseGen = zNoiseGen,
+        .seedNoiseGen = seedNoiseGen,
+        .shiftNoiseGen = shiftNoiseGen,
+    };
 
-inline double perlinNoise::pInterp(double x){
-  double x3 = x*x*x;
-  return (6.0*x3*x*x - 15.0*x3*x + 10.0*x3);
-}
+    double nval = 0.0;
+    double myPersistence = 1.0;
 
-inline double perlinNoise::linInterp(double lbound, double rbound, double x){
-  return ((1.0 - x)*lbound + x*rbound);
-}
+    double xv = r[0] * frequency;
+    double yv = r[1] * frequency;
+    double zv = r[2] * frequency;
 
-double perlinNoise::gradientNoise(double x, double y, double z,
-                  int32_t ia, int32_t ib, int32_t ic, int32_t mySeed){
+    for(unsigned i = 0; i < numOctaves; i++){
 
-  int32_t vectorInd = (xNoiseGen*ia + yNoiseGen*ib + zNoiseGen*ic
-               + seedNoiseGen*mySeed) & 0xffffffff;
+        xv = makeInt32Range(xv);
+        yv = makeInt32Range(yv);
+        zv = makeInt32Range(zv);
 
-  vectorInd ^= (vectorInd >> shiftNoiseGen);
-  vectorInd &= 0xff;
+        const int32_t mySeed = (seed + i) & 0xffffffff;
+        const double signal = coherentNoise(data, xv, yv, zv, mySeed);
+        nval += signal * myPersistence;
 
-  double xGrad = randPerm[vectorInd][0];
-  double yGrad = randPerm[vectorInd][1];
-  double zGrad = randPerm[vectorInd][2];
+        xv *= lacunarity;
+        yv *= lacunarity;
+        zv *= lacunarity;
+        myPersistence *= persistence;
+    }
 
-  double dx = x - (double)ia;
-  double dy = y - (double)ib;
-  double dz = z - (double)ic;
-
-  return (xGrad*dx + yGrad*dy + zGrad*dz)*2.12;
-};
-
-double perlinNoise::coherentNoise(double x, double y, double z, int32_t mySeed){
-
-  // make integer coordinate surrounding cube
-  int32_t xlb = (x > 0.0 ? (int32_t)x : (int32_t)x - 1);
-  int32_t xub = xlb + 1;
-  int32_t ylb = (y > 0.0 ? (int32_t)y : (int32_t)y - 1);
-  int32_t yub = ylb + 1;
-  int32_t zlb = (z > 0.0 ? (int32_t)z : (int32_t)z - 1);
-  int32_t zub = zlb + 1;
-
-  // interpolation based on location in cube
-  double xInterp = pInterp(x - (double)xlb);
-  double yInterp = pInterp(y - (double)ylb);
-  double zInterp = pInterp(z - (double)zlb);
-
-  // calculate gradient noise at cube points and interpolate to target location
-  double na,nb;
-  double ix0,ix1,iy0,iy1;
-
-  na = gradientNoise(x, y, z, xlb, ylb, zlb, mySeed);
-  nb = gradientNoise(x, y, z, xub, ylb, zlb, mySeed);
-  ix0 = linInterp(na, nb, xInterp);
-  na = gradientNoise(x, y, z, xlb, yub, zlb, mySeed);
-  nb = gradientNoise(x, y, z, xub, yub, zlb, mySeed);
-  ix1 = linInterp(na, nb, xInterp);
-  iy0 = linInterp(ix0, ix1, yInterp);
-  na = gradientNoise(x, y, z, xlb, ylb, zub, mySeed);
-  nb = gradientNoise(x, y, z, xub, ylb, zub, mySeed);
-  ix0 = linInterp(na, nb, xInterp);
-  na = gradientNoise(x, y, z, xlb, yub, zub, mySeed);
-  nb = gradientNoise(x, y, z, xub, yub, zub, mySeed);
-  ix1 = linInterp(na, nb, xInterp);
-  iy1 = linInterp(ix0, ix1, yInterp);
-
-  return linInterp(iy0, iy1, zInterp);
-}
-
-
-void perlinNoise::setSeed(int32_t inSeed){
-  seed = inSeed;
-}
-
-double perlinNoise::getNoise(double* r){
-
-  double nval = 0.0;
-  double signal = 0.0;
-  double myPersistence = 1.0;
-
-  int32_t mySeed;
-
-  double xv = r[0]*frequency;
-  double yv = r[1]*frequency;
-  double zv = r[2]*frequency;
-
-  for(int32_t i=0; i<numOctaves; i++){
-
-    xv = makeInt32Range(xv);
-    yv = makeInt32Range(yv);
-    zv = makeInt32Range(zv);
-
-    mySeed = (seed + i) & 0xffffffff;
-    signal = coherentNoise(xv, yv, zv, mySeed);
-    nval += signal*myPersistence;
-
-    xv *= lacunarity;
-    yv *= lacunarity;
-    zv *= lacunarity;
-    myPersistence *= persistence;
-  }
-
-  return nval;
+    return nval;
 }
