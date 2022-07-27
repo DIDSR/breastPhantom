@@ -25,6 +25,8 @@
 #include <vtkMath.h>
 #include <vtkVector.h>
 
+#include "tissues.hxx"
+
 
 using namespace std;
 namespace po = boost::program_options;
@@ -38,7 +40,7 @@ ductTree::ductTree(po::variables_map o, ductTreeInit *init):
     opt = o;
 
     // assign id and update number of ducts
-#pragma omp critical
+    #pragma omp critical
     {
         id = num;
         num += 1;
@@ -64,7 +66,6 @@ ductTree::ductTree(po::variables_map o, ductTreeInit *init):
 
     boundBox = init->boundBox;
     compartmentId = init->compartmentId;
-    tissue = init->tissue;
     for(int i=0; i<3; i++){
         prefDir[i] = init->prefDir[i];
     }
@@ -131,11 +132,13 @@ ductBr::ductBr(double* spos, double* sdir, double r, ductTree *owner){
     for(int a=-1; a<=1; a++){
         for(int b=-1; b<=1; b++){
             for(int c=-1; c<=1; c++){
-    unsigned char* p =
-        static_cast<unsigned char*>(myTree->breast->GetScalarPointer(invox[0]+a,invox[1]+b,invox[2]+c));
-    if(p[0] != myTree->compartmentId && p[0] != myTree->tissue->duct){
-        edgeSeg = true;
-    }
+
+                auto p = static_cast<unsigned char*>(
+                    myTree->breast->GetScalarPointer(invox[0]+a,invox[1]+b,invox[2]+c));
+
+                if(p[0] != myTree->compartmentId && p[0] != tissue::duct){
+                    edgeSeg = true;
+                }
             }
         }
     }
@@ -155,14 +158,16 @@ ductBr::ductBr(double* spos, double* sdir, double r, ductTree *owner){
         myTree->breast->ComputeStructuredCoordinates(thePos, invox, pcoords);
         for(int a=-1; a<=1; a++){
             for(int b=-1; b<=1; b++){
-    for(int c=-1; c<=1; c++){
-        unsigned char* p =
-            static_cast<unsigned char*>(myTree->breast->GetScalarPointer(invox[0]+a,invox[1]+b,invox[2]+c));
-        if (p[0] != myTree->compartmentId && p[0] != myTree->tissue->duct) {
-            edgeSeg = true;
-            spdlog::info("A segment hit the boundary");
-        }
-    }
+                for(int c=-1; c<=1; c++){
+
+                    auto p = static_cast<unsigned char*>(
+                        myTree->breast->GetScalarPointer(invox[0]+a,invox[1]+b,invox[2]+c));
+
+                    if (p[0] != myTree->compartmentId && p[0] != tissue::duct) {
+                        edgeSeg = true;
+                        spdlog::info("A segment hit the boundary");
+                    }
+                }
             }
         }
     }
@@ -218,7 +223,7 @@ ductBr::ductBr(double* spos, double* sdir, double r, ductTree *owner){
             att[0] = len;
             att[1] = wid;
             for(int j=0; j<3; j++){
-    att[j+2] = endDir[j];
+                att[j+2] = endDir[j];
             }
             myTree->TDLUattr->InsertNextTuple(att);
 
@@ -230,17 +235,17 @@ ductBr::ductBr(double* spos, double* sdir, double r, ductTree *owner){
             // coordinate system
             // first vector
             for(int j=0; j<3; j++){
-    axis[0][j] = endDir[j];
+                axis[0][j] = endDir[j];
             }
 
             // calculate second vector based on direction to coordinate origin
             for(int j=0; j<3; j++){
-    v2[j] = endPos[j];
+                v2[j] = endPos[j];
             }
             innerProd = v2.Dot(axis[0]);
 
             for(int j=0; j<3; j++){
-    axis[1][j] = v2[j] - innerProd*axis[0][j];
+                axis[1][j] = v2[j] - innerProd*axis[0][j];
             }
             axis[1].Normalize();
 
@@ -252,43 +257,43 @@ ductBr::ductBr(double* spos, double* sdir, double r, ductTree *owner){
             double imgRes = myTree->opt["base.imgRes"].as<double>();
             int searchRad = (int)(ceil(len/imgRes));
 
-#pragma omp parallel for collapse(3)
+            #pragma omp parallel for collapse(3)
             for(int a=-searchRad; a<=searchRad; a++){
-    for(int b=-searchRad; b<=searchRad; b++){
-        for(int c=-searchRad; c<=searchRad; c++){
-            double curPos[3] = {endPos[0]+a*imgRes, endPos[1]+b*imgRes, endPos[2]+c*imgRes};
-            int index[3];
-            double pcoords[3];
+                for(int b=-searchRad; b<=searchRad; b++){
+                    for(int c=-searchRad; c<=searchRad; c++){
+                        double curPos[3] = {endPos[0]+a*imgRes, endPos[1]+b*imgRes, endPos[2]+c*imgRes};
+                        int index[3];
+                        double pcoords[3];
 
-            // structure coordinates, check if in breast
-            if(myTree->breast->ComputeStructuredCoordinates(curPos, index, pcoords)){
-                // in breast extent
+                        // structure coordinates, check if in breast
+                        if(myTree->breast->ComputeStructuredCoordinates(curPos, index, pcoords)){
+                            // in breast extent
 
-                // get tissue type, if not duct,skin,nipple,TDLU,outside breast: proceed
-                unsigned char* p = static_cast<unsigned char*>(myTree->breast->GetScalarPointer(index));
+                            // get tissue type, if not duct,skin,nipple,TDLU,outside breast: proceed
+                            unsigned char* p = static_cast<unsigned char*>(myTree->breast->GetScalarPointer(index));
 
-                if(p[0] != myTree->tissue->bg && p[0] != myTree->tissue->skin && p[0] != myTree->tissue->nipple &&
-         p[0] != myTree->tissue->TDLU && p[0] != myTree->tissue->duct){
+                            if(p[0] != tissue::bg && p[0] != tissue::skin && p[0] != tissue::nipple &&
+                    p[0] != tissue::TDLU && p[0] != tissue::duct){
 
-        // check if in oval
-        // compute position in local coordinate system
-        vtkVector3d rvec;
-        vtkVector3d lCoords;
-        for(int m=0; m<3; m++){
-            rvec[m] = curPos[m]-endPos[m];
-        }
-        for(int m=0; m<3; m++){
-            lCoords[m] = rvec.Dot(axis[m]);
-        }
+                    // check if in oval
+                    // compute position in local coordinate system
+                    vtkVector3d rvec;
+                    vtkVector3d lCoords;
+                    for(int m=0; m<3; m++){
+                        rvec[m] = curPos[m]-endPos[m];
+                    }
+                    for(int m=0; m<3; m++){
+                        lCoords[m] = rvec.Dot(axis[m]);
+                    }
 
-        // inside oval?
-        if(lCoords[0]*lCoords[0]/len/len+lCoords[1]*lCoords[1]/wid/wid+lCoords[2]*lCoords[2]/wid/wid < 1.0){
-            p[0] = myTree->tissue->TDLU;
-        }
+                    // inside oval?
+                    if(lCoords[0]*lCoords[0]/len/len+lCoords[1]*lCoords[1]/wid/wid+lCoords[2]*lCoords[2]/wid/wid < 1.0){
+                        p[0] = tissue::TDLU;
+                    }
+                            }
+                        }
+                    }
                 }
-            }
-        }
-    }
             }
         }
     } else {
@@ -349,11 +354,13 @@ ductBr::ductBr(ductBr* par, unsigned int lev, unsigned int g, double r, double t
     for(int a=-1; a<=1; a++){
         for(int b=-1; b<=1; b++){
             for(int c=-1; c<=1; c++){
-    unsigned char* p =
-        static_cast<unsigned char*>(myTree->breast->GetScalarPointer(invox[0]+a,invox[1]+b,invox[2]+c));
-    if(p[0] != myTree->compartmentId && p[0] != myTree->tissue->duct){
-        edgeSeg = true;
-    }
+
+                auto p = static_cast<unsigned char*>(
+                    myTree->breast->GetScalarPointer(invox[0]+a,invox[1]+b,invox[2]+c));
+
+                if(p[0] != myTree->compartmentId && p[0] != tissue::duct){
+                    edgeSeg = true;
+                }
             }
         }
     }
@@ -372,13 +379,15 @@ ductBr::ductBr(ductBr* par, unsigned int lev, unsigned int g, double r, double t
         myTree->breast->ComputeStructuredCoordinates(thePos, invox, pcoords);
         for(int a=-1; a<=1; a++){
             for(int b=-1; b<=1; b++){
-    for(int c=-1; c<=1; c++){
-        unsigned char* p =
-            static_cast<unsigned char*>(myTree->breast->GetScalarPointer(invox[0]+a,invox[1]+b,invox[2]+c));
-        if(p[0] != myTree->compartmentId && p[0] != myTree->tissue->duct){
-            edgeSeg = true;
-        }
-    }
+                for(int c=-1; c<=1; c++){
+
+                    auto p = static_cast<unsigned char*>(
+                        myTree->breast->GetScalarPointer(invox[0]+a,invox[1]+b,invox[2]+c));
+
+                    if(p[0] != myTree->compartmentId && p[0] != tissue::duct){
+                        edgeSeg = true;
+                    }
+                }
             }
         }
     }
@@ -421,7 +430,7 @@ ductBr::ductBr(ductBr* par, unsigned int lev, unsigned int g, double r, double t
             double maxWid = myTree->opt["TDLU.maxWidth"].as<double>();
 
             if(length < maxLen){
-    maxLen = length;
+                maxLen = length;
             }
 
             double len = minLen + (maxLen-minLen)*myTree->u01();
@@ -435,7 +444,7 @@ ductBr::ductBr(ductBr* par, unsigned int lev, unsigned int g, double r, double t
             att[0] = len;
             att[1] = wid;
             for(int j=0; j<3; j++){
-    att[j+2] = endDir[j];
+                att[j+2] = endDir[j];
             }
             myTree->TDLUattr->InsertNextTuple(att);
 
@@ -447,17 +456,17 @@ ductBr::ductBr(ductBr* par, unsigned int lev, unsigned int g, double r, double t
             // coordinate system
             // first vector
             for(int j=0; j<3; j++){
-    axis[0][j] = endDir[j];
+                axis[0][j] = endDir[j];
             }
 
             // calculate second vector based on direction to coordinate origin
             for(int j=0; j<3; j++){
-    v2[j] = endPos[j];
+                v2[j] = endPos[j];
             }
             innerProd = v2.Dot(axis[0]);
 
             for(int j=0; j<3; j++){
-    axis[1][j] = v2[j] - innerProd*axis[0][j];
+                axis[1][j] = v2[j] - innerProd*axis[0][j];
             }
             axis[1].Normalize();
 
@@ -469,43 +478,43 @@ ductBr::ductBr(ductBr* par, unsigned int lev, unsigned int g, double r, double t
             double imgRes = myTree->opt["base.imgRes"].as<double>();
             int searchRad = (int)(ceil(len/imgRes));
 
-#pragma omp parallel for collapse(3)
+        #pragma omp parallel for collapse(3)
             for(int a=-searchRad; a<=searchRad; a++){
-    for(int b=-searchRad; b<=searchRad; b++){
-        for(int c=-searchRad; c<=searchRad; c++){
-            double curPos[3] = {endPos[0]+a*imgRes, endPos[1]+b*imgRes, endPos[2]+c*imgRes};
-            int index[3];
-            double pcoords[3];
+                for(int b=-searchRad; b<=searchRad; b++){
+                    for(int c=-searchRad; c<=searchRad; c++){
+                        double curPos[3] = {endPos[0]+a*imgRes, endPos[1]+b*imgRes, endPos[2]+c*imgRes};
+                        int index[3];
+                        double pcoords[3];
 
-            // structure coordinates, check if in breast
-            if(myTree->breast->ComputeStructuredCoordinates(curPos, index, pcoords)){
-                // in breast extent
+                        // structure coordinates, check if in breast
+                        if(myTree->breast->ComputeStructuredCoordinates(curPos, index, pcoords)){
+                            // in breast extent
 
-                // get tissue type, if not duct,skin,nipple,TDLU,outside breast: proceed
-                unsigned char* p = static_cast<unsigned char*>(myTree->breast->GetScalarPointer(index));
+                            // get tissue type, if not duct,skin,nipple,TDLU,outside breast: proceed
+                            unsigned char* p = static_cast<unsigned char*>(myTree->breast->GetScalarPointer(index));
 
-                if(p[0] != myTree->tissue->bg && p[0] != myTree->tissue->skin && p[0] != myTree->tissue->nipple &&
-         p[0] != myTree->tissue->TDLU && p[0] != myTree->tissue->duct){
+                            if(p[0] != tissue::bg && p[0] != tissue::skin && p[0] != tissue::nipple &&
+                                p[0] != tissue::TDLU && p[0] != tissue::duct){
 
-        // check if in oval
-        // compute position in local coordinate system
-        vtkVector3d rvec;
-        vtkVector3d lCoords;
-        for(int m=0; m<3; m++){
-            rvec[m] = curPos[m]-endPos[m];
-        }
-        for(int m=0; m<3; m++){
-            lCoords[m] = rvec.Dot(axis[m]);
-        }
+                                // check if in oval
+                                // compute position in local coordinate system
+                                vtkVector3d rvec;
+                                vtkVector3d lCoords;
+                                for(int m=0; m<3; m++){
+                                    rvec[m] = curPos[m]-endPos[m];
+                                }
+                                for(int m=0; m<3; m++){
+                                    lCoords[m] = rvec.Dot(axis[m]);
+                                }
 
-        // inside oval?
-        if(lCoords[0]*lCoords[0]/len/len+lCoords[1]*lCoords[1]/wid/wid+lCoords[2]*lCoords[2]/wid/wid < 1.0){
-            p[0] = myTree->tissue->TDLU;
-        }
+                                // inside oval?
+                                if(lCoords[0]*lCoords[0]/len/len+lCoords[1]*lCoords[1]/wid/wid+lCoords[2]*lCoords[2]/wid/wid < 1.0){
+                                    p[0] = tissue::TDLU;
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-        }
-    }
             }
         }
     } else {
@@ -569,7 +578,7 @@ ductBr::ductBr(ductBr* par, ductBr* par2, unsigned int lev, unsigned int g, doub
             for(int c=-1; c<=1; c++){
     unsigned char* p =
         static_cast<unsigned char*>(myTree->breast->GetScalarPointer(invox[0]+a,invox[1]+b,invox[2]+c));
-    if(p[0] != myTree->compartmentId && p[0] != myTree->tissue->duct){
+    if(p[0] != myTree->compartmentId && p[0] != tissue::duct){
         edgeSeg = true;
     }
             }
@@ -590,13 +599,13 @@ ductBr::ductBr(ductBr* par, ductBr* par2, unsigned int lev, unsigned int g, doub
         myTree->breast->ComputeStructuredCoordinates(thePos, invox, pcoords);
         for(int a=-1; a<=1; a++){
             for(int b=-1; b<=1; b++){
-    for(int c=-1; c<=1; c++){
-        unsigned char* p =
-            static_cast<unsigned char*>(myTree->breast->GetScalarPointer(invox[0]+a,invox[1]+b,invox[2]+c));
-        if(p[0] != myTree->compartmentId && p[0] != myTree->tissue->duct){
-            edgeSeg = true;
-        }
-    }
+                for(int c=-1; c<=1; c++){
+                    unsigned char* p =
+                        static_cast<unsigned char*>(myTree->breast->GetScalarPointer(invox[0]+a,invox[1]+b,invox[2]+c));
+                    if(p[0] != myTree->compartmentId && p[0] != tissue::duct){
+                        edgeSeg = true;
+                    }
+                }
             }
         }
     }
@@ -654,7 +663,7 @@ ductBr::ductBr(ductBr* par, ductBr* par2, unsigned int lev, unsigned int g, doub
             att[0] = len;
             att[1] = wid;
             for(int j=0; j<3; j++){
-    att[j+2] = endDir[j];
+                att[j+2] = endDir[j];
             }
             myTree->TDLUattr->InsertNextTuple(att);
 
@@ -666,17 +675,17 @@ ductBr::ductBr(ductBr* par, ductBr* par2, unsigned int lev, unsigned int g, doub
             // coordinate system
             // first vector
             for(int j=0; j<3; j++){
-    axis[0][j] = endDir[j];
+                axis[0][j] = endDir[j];
             }
 
             // calculate second vector based on direction to coordinate origin
             for(int j=0; j<3; j++){
-    v2[j] = endPos[j];
+                v2[j] = endPos[j];
             }
             innerProd = v2.Dot(axis[0]);
 
             for(int j=0; j<3; j++){
-    axis[1][j] = v2[j] - innerProd*axis[0][j];
+                axis[1][j] = v2[j] - innerProd*axis[0][j];
             }
             axis[1].Normalize();
 
@@ -688,43 +697,43 @@ ductBr::ductBr(ductBr* par, ductBr* par2, unsigned int lev, unsigned int g, doub
             double imgRes = myTree->opt["base.imgRes"].as<double>();
             int searchRad = (int)(ceil(len/imgRes));
 
-#pragma omp parallel for collapse(3)
+            #pragma omp parallel for collapse(3)
             for(int a=-searchRad; a<=searchRad; a++){
-    for(int b=-searchRad; b<=searchRad; b++){
-        for(int c=-searchRad; c<=searchRad; c++){
-            double curPos[3] = {endPos[0]+a*imgRes, endPos[1]+b*imgRes, endPos[2]+c*imgRes};
-            int index[3];
-            double pcoords[3];
+                for(int b=-searchRad; b<=searchRad; b++){
+                    for(int c=-searchRad; c<=searchRad; c++){
+                        double curPos[3] = {endPos[0]+a*imgRes, endPos[1]+b*imgRes, endPos[2]+c*imgRes};
+                        int index[3];
+                        double pcoords[3];
 
-            // structure coordinates, check if in breast
-            if(myTree->breast->ComputeStructuredCoordinates(curPos, index, pcoords)){
-                // in breast extent
+                        // structure coordinates, check if in breast
+                        if(myTree->breast->ComputeStructuredCoordinates(curPos, index, pcoords)){
+                            // in breast extent
 
-                // get tissue type, if not duct,skin,nipple,TDLU,outside breast: proceed
-                unsigned char* p = static_cast<unsigned char*>(myTree->breast->GetScalarPointer(index));
+                            // get tissue type, if not duct,skin,nipple,TDLU,outside breast: proceed
+                            unsigned char* p = static_cast<unsigned char*>(myTree->breast->GetScalarPointer(index));
 
-                if(p[0] != myTree->tissue->bg && p[0] != myTree->tissue->skin && p[0] != myTree->tissue->nipple &&
-         p[0] != myTree->tissue->TDLU && p[0] != myTree->tissue->duct){
+                            if(p[0] != tissue::bg && p[0] != tissue::skin && p[0] != tissue::nipple &&
+                                p[0] != tissue::TDLU && p[0] != tissue::duct){
 
-        // check if in oval
-        // compute position in local coordinate system
-        vtkVector3d rvec;
-        vtkVector3d lCoords;
-        for(int m=0; m<3; m++){
-            rvec[m] = curPos[m]-endPos[m];
-        }
-        for(int m=0; m<3; m++){
-            lCoords[m] = rvec.Dot(axis[m]);
-        }
+                                // check if in oval
+                                // compute position in local coordinate system
+                                vtkVector3d rvec;
+                                vtkVector3d lCoords;
+                                for(int m=0; m<3; m++){
+                                    rvec[m] = curPos[m]-endPos[m];
+                                }
+                                for(int m=0; m<3; m++){
+                                    lCoords[m] = rvec.Dot(axis[m]);
+                                }
 
-        // inside oval?
-        if(lCoords[0]*lCoords[0]/len/len+lCoords[1]*lCoords[1]/wid/wid+lCoords[2]*lCoords[2]/wid/wid < 1.0){
-            p[0] = myTree->tissue->TDLU;
-        }
+                                // inside oval?
+                                if(lCoords[0]*lCoords[0]/len/len+lCoords[1]*lCoords[1]/wid/wid+lCoords[2]*lCoords[2]/wid/wid < 1.0){
+                                    p[0] = tissue::TDLU;
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-        }
-    }
             }
         }
 
@@ -743,17 +752,15 @@ ductBr::ductBr(ductBr* par, ductBr* par2, unsigned int lev, unsigned int g, doub
 
 double ductBr::setLength(void){
     // set length using random distribution and level
-    double len;
     double randVal = myTree->u01();
     double baseLen = myTree->baseLength;
     double lenShrink = myTree->opt["ductBr.lenShrink"].as<double>();
     double lenRange = myTree->opt["ductBr.lenRange"].as<double>();
 
-    len = baseLen*pow(lenShrink,level);
-
+    double len = baseLen*pow(lenShrink,level);
     // add variability +/- lenRange fraction of len
-    len = len - lenRange*len + randVal*2*lenRange*len;
-    return(len);
+    len += randVal*2*lenRange*len - lenRange*len;
+    return len;
 }
 
 unsigned int ductBr::setChild(void){
@@ -778,20 +785,20 @@ unsigned int ductBr::setChild(void){
     double minRad = myTree->opt["ductBr.childMinRad"].as<double>();
     if(endRad < minRad){
         //free(prob);
-        return(0);
+        return 0;
     }
 
     // check for max number branches
     if(myTree->numBranch >= myTree->maxBranch){
         //free(prob);
-        return(0);
+        return 0;
     }
 
     // define maximum generation
     unsigned int maxGen = myTree->opt["ductTree.maxGen"].as<uint>();
     if(gen > maxGen){
         //free(prob);
-        return(0);
+        return 0;
     }
 
     //double randVal = myTree->u01();
@@ -799,14 +806,14 @@ unsigned int ductBr::setChild(void){
     //for(int b=maxChild-1; b >= 0; b--){
     //  if(randVal > prob[std::min(level,levBound)*maxChild+b]){
     //    free(prob);
-    //    return(b+1);
+    //    return b+1;
     //  }
     //}
     // default to no children
     //free(prob);
 
     // default 2 children
-    return(2);
+    return 2;
 }
 
 void ductBr::setRadiiThetas(double* radii, double* thetas){
@@ -1050,205 +1057,205 @@ void ductSeg::makeSeg(){
             inROI = false;
             inFOV = false;
             while (!inROI && !inFOV && totalTry < maxTry){
-    allTry++;
-    // generate random segment
-    theta = 2*pi*myBranch->myTree->u01();
-    radUB = maxRad;
-    radLB = length/angleMax;
-    // use beta distribution to pick radius
-    randVal = myBranch->myTree->u01();
-    quantileVal = boost::math::quantile(myBranch->myTree->radiusDist, randVal);
-    // scale to radius range
-    radius = quantileVal*(radUB-radLB) + radLB;
-    totalTry += 1;
+                allTry++;
+                // generate random segment
+                theta = 2*pi*myBranch->myTree->u01();
+                radUB = maxRad;
+                radLB = length/angleMax;
+                // use beta distribution to pick radius
+                randVal = myBranch->myTree->u01();
+                quantileVal = boost::math::quantile(myBranch->myTree->radiusDist, randVal);
+                // scale to radius range
+                radius = quantileVal*(radUB-radLB) + radLB;
+                totalTry += 1;
 
-    // checking if in ROI
-    // need basis vectors in plane perpendicular to startDir
+                // checking if in ROI
+                // need basis vectors in plane perpendicular to startDir
 
-    // project origin (0,0,0) onto plane perpendicular to startDir
-    vtkMath::ProjectVector(startPos, startDir, tempV);
+                // project origin (0,0,0) onto plane perpendicular to startDir
+                vtkMath::ProjectVector(startPos, startDir, tempV);
 
-    vtkMath::Subtract(tempV, startPos, basis1);
+                vtkMath::Subtract(tempV, startPos, basis1);
 
-    // normalize it
-    vtkMath::Normalize(basis1);
+                // normalize it
+                vtkMath::Normalize(basis1);
 
-    // find second basis vector using cross product
-    vtkMath::Cross(startDir,basis1,basis2);
+                // find second basis vector using cross product
+                vtkMath::Cross(startDir,basis1,basis2);
 
-    // calculate curvature
-    for(int i=0; i<3; i++){
-        curv[i] = startPos[i] + radius*(basis1[i]*cos(theta) + basis2[i]*sin(theta));
-    }
-
-    // calculate norm(startPos-curv)
-    curvNorm = 0.0;
-    for(int i=0; i<3; i++){
-        curvNorm += (startPos[i]-curv[i])*(startPos[i]-curv[i]);
-    }
-    curvNorm = sqrt(curvNorm);
-
-    // check if in ROI
-    angleStep = roiStep/radius;
-    checkAngle = 0.0;
-    checkLength = 0.0;
-    inROI = true;
-    inFOV = true;
-    while (checkLength < length && inROI && inFOV){
-        for(int i=0; i<3; i++){
-            checkPos[i] = curv[i] + radius*((startPos[i]-curv[i])/curvNorm*cos(checkAngle)+startDir[i]*sin(checkAngle));
-        }
-
-        // is point in FOV and in ROI?
-
-        // check FOV first
-        if(checkPos[0] < breastFOV[0] || checkPos[0] > breastFOV[1] ||
-             checkPos[1] < breastFOV[2] || checkPos[1] > breastFOV[3] ||
-             checkPos[2] < breastFOV[4] || checkPos[2] > breastFOV[5]){
-            inFOV = false;
-        }
-
-        // check in ROI
-
-        if(inFOV){
-            myBranch->myTree->breast->ComputeStructuredCoordinates(checkPos, myVoxel, pcoords);
-
-            unsigned char* p =
-                static_cast<unsigned char*>(myBranch->myTree->breast->GetScalarPointer(myVoxel[0],myVoxel[1],myVoxel[2]));
-            if(p[0] != myBranch->myTree->compartmentId && p[0] != myBranch->myTree->tissue->duct){
-                inROI = false;
-            }
-        }
-
-        checkAngle += angleStep;
-        checkLength += angleStep*radius;
-    }
-    // check the end point
-    for(int i=0; i<3; i++){
-        checkPos[i] = curv[i] + radius*((startPos[i]-curv[i])/curvNorm*cos(length/radius)+startDir[i]*sin(length/radius));
-    }
-    // check FOV first
-    if(checkPos[0] < breastFOV[0] || checkPos[0] > breastFOV[1] ||
-         checkPos[1] < breastFOV[2] || checkPos[1] > breastFOV[3] ||
-         checkPos[2] < breastFOV[4] || checkPos[2] > breastFOV[5]){
-        inFOV = false;
-    }
-
-    // check in ROI
-
-    if(inFOV){
-        myBranch->myTree->breast->ComputeStructuredCoordinates(checkPos, myVoxel, pcoords);
-
-        unsigned char* p =
-            static_cast<unsigned char*>(myBranch->myTree->breast->GetScalarPointer(myVoxel[0],myVoxel[1],myVoxel[2]));
-        if(p[0] != myBranch->myTree->compartmentId && p[0] != myBranch->myTree->tissue->duct){
-            inROI = false;
-        }
-    }
-            }
-            curTry += 1;
-            // if valid
-            if (inROI && inFOV){
-    if(!foundSeg){
-        foundSeg = true;
-        // this is first valid segment, must be the best
-        // calculate cost and set to current best
-
-        // reduction in squared distance to ducts in ROI
-        // only evaluate endPos
-        density = 0.0;
-
-        // iterate over fill voxels
-#pragma omp parallel for collapse(3) reduction(+:density)
-        for(int a=fillExtent[0]; a<=fillExtent[1]; a++){
-            for(int b=fillExtent[2]; b<=fillExtent[3]; b++){
-                for(int c=fillExtent[4]; c<=fillExtent[5]; c++){
-        double* v = static_cast<double*>(myBranch->myTree->fill->GetScalarPointer(a,b,c));
-        if(v[0] > 0.0){
-            double dist;
-            // voxel in ROI, calculate change in distance
-            // voxel location
-            vtkIdType id;
-            int coord[3];
-            coord[0] = a;
-            coord[1] = b;
-            coord[2] = c;
-            id = myBranch->myTree->fill->ComputePointId(coord);
-            // get spatial coordinates of point
-            double pos[3];
-            myBranch->myTree->fill->GetPoint(id,pos);
-            dist = vtkMath::Distance2BetweenPoints(checkPos, pos);
-            if(dist < v[0]){
-                density -= v[0] - dist;
-            }
-        }
+                // calculate curvature
+                for(int i=0; i<3; i++){
+                    curv[i] = startPos[i] + radius*(basis1[i]*cos(theta) + basis2[i]*sin(theta));
                 }
-            }
-        }
 
-        // penalty includes direction of segment (away from preferential direction)
-        // negative cost is good, dot product gives cosine of angle
-        // endDir from derivative of position
-        for(int i=0; i<3; i++){
-            endDir[i] = -1*(startPos[i]-curv[i])/curvNorm*sin(length/radius)+startDir[i]*cos(length/radius);
-        }
-        // normalize
-        vtkMath::Normalize(endDir);
-
-        bestCost = densityWt*density - angleWt*vtkMath::Dot(endDir,prefDir);
-        bestRadius = radius;
-        for(int i=0; i<3; i++){
-            bestCurv[i] = curv[i];
-        }
-    } else {
-        // calculate segment cost, if best yet, update current best
-        density = 0.0;
-
-        // iterate over fill voxels
-#pragma omp parallel for collapse(3) reduction(+:density)
-        for(int a=fillExtent[0]; a<=fillExtent[1]; a++){
-            for(int b=fillExtent[2]; b<=fillExtent[3]; b++){
-                for(int c=fillExtent[4]; c<=fillExtent[5]; c++){
-        double* v = static_cast<double*>(myBranch->myTree->fill->GetScalarPointer(a,b,c));
-        if(v[0] > 0.0){
-            double dist;
-            // voxel in ROI, calculate change in distance
-            // voxel location
-            vtkIdType id;
-            int coord[3];
-            coord[0] = a;
-            coord[1] = b;
-            coord[2] = c;
-            id = myBranch->myTree->fill->ComputePointId(coord);
-            // get spatial coordinates of point
-            double pos[3];
-            myBranch->myTree->fill->GetPoint(id,pos);
-            dist = vtkMath::Distance2BetweenPoints(checkPos, pos);
-            if(dist < v[0]){
-                density -= v[0] - dist;
-            }
-        }
+                // calculate norm(startPos-curv)
+                curvNorm = 0.0;
+                for(int i=0; i<3; i++){
+                    curvNorm += (startPos[i]-curv[i])*(startPos[i]-curv[i]);
                 }
-            }
-        }
+                curvNorm = sqrt(curvNorm);
 
-        // endDir from derivative of position
-        for(int i=0; i<3; i++){
-            endDir[i] = -1*(startPos[i]-curv[i])/curvNorm*sin(length/radius)+startDir[i]*cos(length/radius);
-        }
-        // normalize
-        vtkMath::Normalize(endDir);
+                // check if in ROI
+                angleStep = roiStep/radius;
+                checkAngle = 0.0;
+                checkLength = 0.0;
+                inROI = true;
+                inFOV = true;
+                while (checkLength < length && inROI && inFOV){
+                    for(int i=0; i<3; i++){
+                        checkPos[i] = curv[i] + radius*((startPos[i]-curv[i])/curvNorm*cos(checkAngle)+startDir[i]*sin(checkAngle));
+                    }
 
-        cost = densityWt*density - angleWt*vtkMath::Dot(endDir,prefDir);
-        if (cost < bestCost){
-            // found a new best segment
-            bestCost = cost;
-            bestRadius = radius;
-            for(int i=0; i<3; i++){
-                bestCurv[i] = curv[i];
-            }
-        }
-    }
+                    // is point in FOV and in ROI?
+
+                    // check FOV first
+                    if(checkPos[0] < breastFOV[0] || checkPos[0] > breastFOV[1] ||
+                        checkPos[1] < breastFOV[2] || checkPos[1] > breastFOV[3] ||
+                        checkPos[2] < breastFOV[4] || checkPos[2] > breastFOV[5]){
+                        inFOV = false;
+                    }
+
+                    // check in ROI
+
+                    if(inFOV){
+                        myBranch->myTree->breast->ComputeStructuredCoordinates(checkPos, myVoxel, pcoords);
+
+                        unsigned char* p =
+                            static_cast<unsigned char*>(myBranch->myTree->breast->GetScalarPointer(myVoxel[0],myVoxel[1],myVoxel[2]));
+                        if(p[0] != myBranch->myTree->compartmentId && p[0] != tissue::duct){
+                            inROI = false;
+                        }
+                    }
+
+                    checkAngle += angleStep;
+                    checkLength += angleStep*radius;
+                }
+                // check the end point
+                for(int i=0; i<3; i++){
+                    checkPos[i] = curv[i] + radius*((startPos[i]-curv[i])/curvNorm*cos(length/radius)+startDir[i]*sin(length/radius));
+                }
+                // check FOV first
+                if(checkPos[0] < breastFOV[0] || checkPos[0] > breastFOV[1] ||
+                    checkPos[1] < breastFOV[2] || checkPos[1] > breastFOV[3] ||
+                    checkPos[2] < breastFOV[4] || checkPos[2] > breastFOV[5]){
+                    inFOV = false;
+                }
+
+                // check in ROI
+
+                if(inFOV){
+                    myBranch->myTree->breast->ComputeStructuredCoordinates(checkPos, myVoxel, pcoords);
+
+                    unsigned char* p =
+                        static_cast<unsigned char*>(myBranch->myTree->breast->GetScalarPointer(myVoxel[0],myVoxel[1],myVoxel[2]));
+                    if(p[0] != myBranch->myTree->compartmentId && p[0] != tissue::duct){
+                        inROI = false;
+                    }
+                }
+                        }
+                        curTry += 1;
+                        // if valid
+                        if (inROI && inFOV){
+                if(!foundSeg){
+                    foundSeg = true;
+                    // this is first valid segment, must be the best
+                    // calculate cost and set to current best
+
+                    // reduction in squared distance to ducts in ROI
+                    // only evaluate endPos
+                    density = 0.0;
+
+                    // iterate over fill voxels
+                    #pragma omp parallel for collapse(3) reduction(+:density)
+                    for(int a=fillExtent[0]; a<=fillExtent[1]; a++){
+                        for(int b=fillExtent[2]; b<=fillExtent[3]; b++){
+                            for(int c=fillExtent[4]; c<=fillExtent[5]; c++){
+                                double* v = static_cast<double*>(myBranch->myTree->fill->GetScalarPointer(a,b,c));
+                                if(v[0] > 0.0){
+                                    double dist;
+                                    // voxel in ROI, calculate change in distance
+                                    // voxel location
+                                    vtkIdType id;
+                                    int coord[3];
+                                    coord[0] = a;
+                                    coord[1] = b;
+                                    coord[2] = c;
+                                    id = myBranch->myTree->fill->ComputePointId(coord);
+                                    // get spatial coordinates of point
+                                    double pos[3];
+                                    myBranch->myTree->fill->GetPoint(id,pos);
+                                    dist = vtkMath::Distance2BetweenPoints(checkPos, pos);
+                                    if(dist < v[0]){
+                                        density -= v[0] - dist;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // penalty includes direction of segment (away from preferential direction)
+                    // negative cost is good, dot product gives cosine of angle
+                    // endDir from derivative of position
+                    for(int i=0; i<3; i++){
+                        endDir[i] = -1*(startPos[i]-curv[i])/curvNorm*sin(length/radius)+startDir[i]*cos(length/radius);
+                    }
+                    // normalize
+                    vtkMath::Normalize(endDir);
+
+                    bestCost = densityWt*density - angleWt*vtkMath::Dot(endDir,prefDir);
+                    bestRadius = radius;
+                    for(int i=0; i<3; i++){
+                        bestCurv[i] = curv[i];
+                    }
+                } else {
+                    // calculate segment cost, if best yet, update current best
+                    density = 0.0;
+
+                    // iterate over fill voxels
+                    #pragma omp parallel for collapse(3) reduction(+:density)
+                    for(int a=fillExtent[0]; a<=fillExtent[1]; a++){
+                        for(int b=fillExtent[2]; b<=fillExtent[3]; b++){
+                            for(int c=fillExtent[4]; c<=fillExtent[5]; c++){
+                                double* v = static_cast<double*>(myBranch->myTree->fill->GetScalarPointer(a,b,c));
+                                if(v[0] > 0.0){
+                                    double dist;
+                                    // voxel in ROI, calculate change in distance
+                                    // voxel location
+                                    vtkIdType id;
+                                    int coord[3];
+                                    coord[0] = a;
+                                    coord[1] = b;
+                                    coord[2] = c;
+                                    id = myBranch->myTree->fill->ComputePointId(coord);
+                                    // get spatial coordinates of point
+                                    double pos[3];
+                                    myBranch->myTree->fill->GetPoint(id,pos);
+                                    dist = vtkMath::Distance2BetweenPoints(checkPos, pos);
+                                    if(dist < v[0]){
+                                        density -= v[0] - dist;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // endDir from derivative of position
+                    for(int i=0; i<3; i++){
+                        endDir[i] = -1*(startPos[i]-curv[i])/curvNorm*sin(length/radius)+startDir[i]*cos(length/radius);
+                    }
+                    // normalize
+                    vtkMath::Normalize(endDir);
+
+                    cost = densityWt*density - angleWt*vtkMath::Dot(endDir,prefDir);
+                    if (cost < bestCost){
+                        // found a new best segment
+                        bestCost = cost;
+                        bestRadius = radius;
+                        for(int i=0; i<3; i++){
+                            bestCurv[i] = curv[i];
+                        }
+                    }
+                }
             }
         }
         if(!foundSeg){
@@ -1300,31 +1307,31 @@ void ductSeg::makeSeg(){
         // update voxel-based visualization
         updateMap();
         // update fill
-#pragma omp parallel for collapse(3)
+        #pragma omp parallel for collapse(3)
         for(int a=fillExtent[0]; a<=fillExtent[1]; a++){
             for(int b=fillExtent[2]; b<=fillExtent[3]; b++){
-    for(int c=fillExtent[4]; c<=fillExtent[5]; c++){
-        double* v = static_cast<double*>(myBranch->myTree->fill->GetScalarPointer(a,b,c));
-        if(v[0] > 0.0){
-            double dist;
-            // voxel in ROI
-            // voxel location
-            vtkIdType id;
-            int coord[3];
-            coord[0] = a;
-            coord[1] = b;
-            coord[2] = c;
-            id = myBranch->myTree->fill->ComputePointId(coord);
-            // get spatial coordinates of point
-            double pos[3];
-            myBranch->myTree->fill->GetPoint(id,pos);
-            dist = vtkMath::Distance2BetweenPoints(endPos, pos);
-            if(dist < v[0]){
-                // update minimum distance
-                v[0] = dist;
-            }
-        }
-    }
+                for(int c=fillExtent[4]; c<=fillExtent[5]; c++){
+                    double* v = static_cast<double*>(myBranch->myTree->fill->GetScalarPointer(a,b,c));
+                    if(v[0] > 0.0){
+                        double dist;
+                        // voxel in ROI
+                        // voxel location
+                        vtkIdType id;
+                        int coord[3];
+                        coord[0] = a;
+                        coord[1] = b;
+                        coord[2] = c;
+                        id = myBranch->myTree->fill->ComputePointId(coord);
+                        // get spatial coordinates of point
+                        double pos[3];
+                        myBranch->myTree->fill->GetPoint(id,pos);
+                        dist = vtkMath::Distance2BetweenPoints(endPos, pos);
+                        if(dist < v[0]){
+                            // update minimum distance
+                            v[0] = dist;
+                        }
+                    }
+                }
             }
         }
     }
@@ -1343,9 +1350,9 @@ void ductSeg::setShape(){
 double ductSeg::getRadius(double t){
     // return segment radius at position t (mm)
     if(t>=0 && t<=length){
-        return(shape[0]*t*t*t+shape[1]*t*t+shape[2]*t+shape[3]);
+        return shape[0]*t*t*t+shape[1]*t*t+shape[2]*t+shape[3];
     } else {
-        return(0);
+        return 0;
     }
 }
 
@@ -1388,7 +1395,7 @@ void ductSeg::updateMap(){
     // calculate number of for loops for openMP
     int lIter = (int)(ceil(length/ls))+1;
 
-#pragma omp parallel for
+    #pragma omp parallel for
     for(int j=0; j<=lIter; j++){
         double lpos = j*ls;
         double currentRad = getRadius(lpos);
@@ -1412,30 +1419,30 @@ void ductSeg::updateMap(){
             double pcoords[3];
 
             if(rpos < step){
-    // only check current voxel assume angle = 0
-    for(int i=0; i<3; i++){
-        checkPos[i] = currentPos[i] + rpos*(-1*cos(0.0)*lbasis2[i] + sin(0.0)*basis3[i]);
-    }
-    myBranch->myTree->breast->ComputeStructuredCoordinates(checkPos, checkIdx, pcoords);
-    // set voxel to duct
-    unsigned char* p =
-        static_cast<unsigned char*>(myBranch->myTree->breast->GetScalarPointer(checkIdx[0],checkIdx[1],checkIdx[2]));
-    p[0] = myBranch->myTree->tissue->duct;
+                // only check current voxel assume angle = 0
+                for(int i=0; i<3; i++){
+                    checkPos[i] = currentPos[i] + rpos*(-1*cos(0.0)*lbasis2[i] + sin(0.0)*basis3[i]);
+                }
+                myBranch->myTree->breast->ComputeStructuredCoordinates(checkPos, checkIdx, pcoords);
+                // set voxel to duct
+                unsigned char* p = static_cast<unsigned char*>(
+                    myBranch->myTree->breast->GetScalarPointer(checkIdx[0],checkIdx[1],checkIdx[2]));
+                p[0] = tissue::duct;
             } else {
-    // angle step
-    double as = step/rpos;
-    double apos = 0.0;
-    while(apos < 2*pi){
-        for(int i=0; i<3; i++){
-            checkPos[i] = currentPos[i] + rpos*(-1*cos(apos)*lbasis2[i] + sin(apos)*basis3[i]);
-        }
-        myBranch->myTree->breast->ComputeStructuredCoordinates(checkPos, checkIdx, pcoords);
-        // set voxel to duct
-        unsigned char* p =
-            static_cast<unsigned char*>(myBranch->myTree->breast->GetScalarPointer(checkIdx[0],checkIdx[1],checkIdx[2]));
-        p[0] = myBranch->myTree->tissue->duct;
-        apos += as;
-    }
+                // angle step
+                double as = step/rpos;
+                double apos = 0.0;
+                while(apos < 2*pi){
+                    for(int i=0; i<3; i++){
+                        checkPos[i] = currentPos[i] + rpos*(-1*cos(apos)*lbasis2[i] + sin(apos)*basis3[i]);
+                    }
+                    myBranch->myTree->breast->ComputeStructuredCoordinates(checkPos, checkIdx, pcoords);
+                    // set voxel to duct
+                    unsigned char* p = static_cast<unsigned char*>(
+                        myBranch->myTree->breast->GetScalarPointer(checkIdx[0],checkIdx[1],checkIdx[2]));
+                    p[0] = tissue::duct;
+                    apos += as;
+                }
             }
             rpos += rs;
         }

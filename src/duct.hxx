@@ -24,8 +24,6 @@
 #include <boost/math/distributions/beta.hpp>
 #include <boost/program_options.hpp>
 
-#include "tissueStruct.hxx"
-
 
 // forward declaration
 class ductSeg;
@@ -36,15 +34,13 @@ class ductBr;
 * structure for duct tree initialization
 *
 **********************************************/
-struct ductTreeInit{
+struct ductTreeInit final {
     // random number generator seed
     int seed;
     // pointer to bound box
     int *boundBox;
     // compartment id
     unsigned char compartmentId;
-    // segmentation tissue values
-    tissueStruct* tissue;
     // FOV
     double startPos[3];
     double endPos[3];
@@ -68,7 +64,7 @@ struct ductTreeInit{
 *
 **********************************************/
 
-class ductTree{
+class ductTree final {
 
     friend class ductBr;
     friend class ductSeg;
@@ -83,8 +79,6 @@ public:
     int *boundBox;
     // compartment id
     unsigned char compartmentId;
-    // tissue values
-    tissueStruct* tissue;
     // maximum number of branches
     unsigned int maxBranch;
     // base length of initial branch
@@ -129,7 +123,7 @@ public:
 *
 **********************************************/
 
-class ductBr {
+class ductBr final {
     // this is one branch of a tree
     // sType refers to segment type (equivalent to tree type)
 
@@ -197,7 +191,7 @@ public:
 *
 **********************************************/
 
-class ductSeg {
+class ductSeg final {
     // this is one segment of a branch
 
     friend class ductBr;

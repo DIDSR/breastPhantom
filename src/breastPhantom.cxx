@@ -82,7 +82,7 @@
 #include "createArtery.hxx"
 #include "vein.hxx"
 #include "createVein.hxx"
-#include "tissueStruct.hxx"
+#include "tissues.hxx"
 
 
 // number of fat lobule Fourier perturbation coefficients
@@ -506,20 +506,6 @@ static int run_with_config(const po::variables_map& vm) {
 
     const double voxelVol = imgRes * imgRes * imgRes;	// volume of a voxel (cubic mm)
 
-    tissueStruct tissue = {
-        .bg = 0,
-        .skin = 2,
-        .nipple = 33,
-        .fat = 1,
-        .cooper = 88,
-        .gland = 29,
-        .TDLU = 95,
-        .duct = 125,
-        .artery = 150,
-        .vein = 225 ,
-        .muscle = 40,
-    };
-
     const unsigned char glandBuffer = 222;
     const unsigned char innerVal = 175; // not needed after compartment creation
     const unsigned char boundVal = 50;  // edge of inner breast volume, not needed after skin generation
@@ -531,12 +517,6 @@ static int run_with_config(const po::variables_map& vm) {
 
     const unsigned char compMax = 28;	// max compartment value for cooper's ligament
     const unsigned char compMin = 12;
-
-    // unligamented tissue classes
-    const unsigned char ufat = 60;
-    const unsigned char ugland = 61;
-    const unsigned char uTDLU = 62;
-    const unsigned char uduct = 63;
 
     // random number generator seed
     // use seed specified in config file, otherwise random seed
@@ -1589,7 +1569,7 @@ static int run_with_config(const po::variables_map& vm) {
     unsigned char* voxVal = static_cast<unsigned char *>(breast->GetScalarPointer());
     const long long int numElements = dim[0]*dim[1]*dim[2];
     for(long long int i=0; i<numElements; i++){
-        *voxVal = tissue.bg;
+        *voxVal = tissue::bg;
         voxVal++;
     }
 
@@ -2159,9 +2139,9 @@ static int run_with_config(const po::variables_map& vm) {
                         c>=breastExtent[4] && c<=breastExtent[5]){
                         auto q = static_cast<unsigned char*>(breast->GetScalarPointer(a,b,c));
 
-                        if(q[0] == tissue.bg){
+                        if(q[0] == tissue::bg){
                             #pragma omp atomic write
-                            q[0] = tissue.skin;
+                            q[0] = tissue::skin;
                         }
                     }
                 }
@@ -2173,12 +2153,12 @@ static int run_with_config(const po::variables_map& vm) {
                     for(int b=ijk[1]-mySearchRad; b<=ijk[1]+mySearchRad; b++){
                         for(int c=ijk[2]-mySearchRad; c<=ijk[2]+mySearchRad; c++){
                             unsigned char* q = static_cast<unsigned char*>(breast->GetScalarPointer(a,b,c));
-                            if(q[0] == tissue.bg){
+                            if(q[0] == tissue::bg){
                                 // check distance
                                 double skinDist = imgRes*sqrt(static_cast<double>((a-ijk[0])*(a-ijk[0])+(b-ijk[1])*(b-ijk[1])+(c-ijk[2])*(c-ijk[2])));
                                 if(skinDist <= mySkinThick){
                                     #pragma omp atomic write
-                                    q[0] = tissue.skin;
+                                    q[0] = tissue::skin;
                                 }
                             }
                         }
@@ -2290,7 +2270,7 @@ static int run_with_config(const po::variables_map& vm) {
                     dist = sqrt(dist);
 
                     if(pow(dist/nippleRad,nippleShape)+pow(fabs(len)/nippleLen,nippleShape) <= 1.0){
-                        q[0] = tissue.nipple;
+                        q[0] = tissue::nipple;
                     }
                 }
             }
@@ -2314,7 +2294,7 @@ static int run_with_config(const po::variables_map& vm) {
             for(int i=0; i<=muscleThick; i++){
                 auto p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
                 if(p[0] == innerVal){
-                    p[0] = tissue.muscle;
+                    p[0] = tissue::muscle;
                 }
             }
         }
@@ -2812,7 +2792,7 @@ static int run_with_config(const po::variables_map& vm) {
                 auto p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
                 if (p[0] == innerVal) {
                     // set to fat
-                    p[0] = ufat;
+                    p[0] = tissue::ufat;
                 }
             }
         }
@@ -2953,7 +2933,7 @@ static int run_with_config(const po::variables_map& vm) {
                     unsigned char myTissue;
 
                     if(closestId < numFatSeeds){
-                        myTissue = ufat;
+                        myTissue = tissue::ufat;
                     } else {
                         myTissue = compartmentVal[glandCompartments[closestId-numFatSeeds].compId];
                     }
@@ -3040,9 +3020,9 @@ static int run_with_config(const po::variables_map& vm) {
         for(int b=0; b<dim[1]; b++){
             for(int a=0; a<dim[0]; a++){
                 auto p = static_cast<unsigned char*>(breast->GetScalarPointer(a,b,c));
-                if(p[0] == ufat){
+                if(p[0] == tissue::ufat){
                     fatVoxels += 1;
-                } else if(p[0] == tissue.cooper){
+                } else if(p[0] == tissue::cooper){
                     cooperVoxels += 1;
                 }
             }
@@ -3084,7 +3064,7 @@ static int run_with_config(const po::variables_map& vm) {
         breast->ComputeStructuredCoordinates(loc, ijk, pcoords);
 
         const auto p = static_cast<const unsigned char *>(breast->GetScalarPointer(ijk));
-        if (p[0] == ufat || p[0] == tissue.muscle
+        if (p[0] == tissue::ufat || p[0] == tissue::muscle
             || vtkMath::Distance2BetweenPoints(loc, nipplePos) < 2 * areolaRad * areolaRad)
         {
             boundaryDone[i] = true;
@@ -3208,7 +3188,7 @@ static int run_with_config(const po::variables_map& vm) {
                 for(int c=glandCompartments[mc].boundBox[4]; c<=glandCompartments[mc].boundBox[5]; c++){
                     unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(a,b,c));
                     if(p[0] == compartmentVal[glandCompartments[mc].compId]){
-                        p[0] = ufat;
+                        p[0] = tissue::ufat;
                     }
                 }
             }
@@ -3260,7 +3240,7 @@ static int run_with_config(const po::variables_map& vm) {
     #pragma omp parallel
     {
         #pragma omp for
-        for(int i=0; i<keepComp; i++){
+        for (int i=0; i<keepComp; i++) {
 
             // find starting direction
             double sdir[3];
@@ -3364,9 +3344,9 @@ static int run_with_config(const po::variables_map& vm) {
 
                                 #pragma omp atomic read
                                 pval = *p;
-                                if(pval != tissue.bg && pval != tissue.skin && pval != tissue.nipple){
+                                if(pval != tissue::bg && pval != tissue::skin && pval != tissue::nipple){
                                     #pragma omp atomic write
-                                    *p = tissue.duct;
+                                    *p = tissue::duct;
                                 }
                             }
                         }
@@ -3385,7 +3365,7 @@ static int run_with_config(const po::variables_map& vm) {
 
             // call duct generation function
             generate_duct(breast, vm, TDLUloc[i], TDLUattr[i], compartmentVal[glandCompartments[keepCompList[i]].compId],
-                glandCompartments[keepCompList[i]].boundBox, &tissue, currentPos, sdir, seed);
+                glandCompartments[keepCompList[i]].boundBox, currentPos, sdir, seed);
         }
     }
 
@@ -3436,7 +3416,7 @@ static int run_with_config(const po::variables_map& vm) {
                 unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(a,b,c));
                 if(p[0] <= compMax && p[0] >= compMin){
                     // glandular
-                    p[0] = ugland;
+                    p[0] = tissue::ugland;
                 }
             }
         }
@@ -3678,7 +3658,7 @@ static int run_with_config(const po::variables_map& vm) {
                     // if duct/TDLU, may need to adjust size
                     unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
 
-                    if(*p == tissue.TDLU || *p == tissue.duct){
+                    if(*p == tissue::TDLU || *p == tissue::duct){
                         // adjust A
 
                         // local coordinates
@@ -3753,7 +3733,7 @@ static int run_with_config(const po::variables_map& vm) {
                     // convert glandular tissue
                     auto p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
 
-                    if(*p == ugland){
+                    if(*p == tissue::ugland){
 
                         // continuous standard coordinates
                         double coords[3];
@@ -3793,7 +3773,7 @@ static int run_with_config(const po::variables_map& vm) {
                         // inside lobule?
                         if(r <= A*(f + perturbVal)-skinLigThick){
                             // gland to fat
-                            *p = ufat;
+                            *p = tissue::ufat;
                             #pragma omp atomic
                             glandVoxels -= 1;
                             #pragma omp atomic
@@ -3803,7 +3783,7 @@ static int run_with_config(const po::variables_map& vm) {
                             // *p = tissue.cooper;
                             //#pragma omp atomic
                             //cooperVoxels += 1;
-                            *p = ufat;
+                            *p = tissue::ufat;
                             #pragma omp atomic
                             fatVoxels += 1;
                             #pragma omp atomic
@@ -3836,7 +3816,7 @@ static int run_with_config(const po::variables_map& vm) {
                 breast->ComputeStructuredCoordinates(loc, ijk, pcoords);
                 unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(ijk));
 
-                if(p[0] == ufat || p[0] == tissue.cooper){
+                if(p[0] == tissue::ufat || p[0] == tissue::cooper){
                     boundaryDone[i] = 1;
                     #pragma omp atomic
                     remBoundary--;
@@ -3935,7 +3915,7 @@ static int run_with_config(const po::variables_map& vm) {
 
             // tissue type
             p = static_cast<unsigned char*>(breast->GetScalarPointer(seedVox));
-            if (*p == ugland){
+            if (*p == tissue::ugland){
                 foundSeed = true;
             }
         }
@@ -4048,7 +4028,7 @@ static int run_with_config(const po::variables_map& vm) {
                     // convert glandular tissue
                     unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
 
-                    if(*p == ugland || *p == tissue.TDLU){
+                    if(*p == tissue::ugland || *p == tissue::TDLU){
 
                         // continuous standard coordinates
                         double coords[3];
@@ -4086,7 +4066,7 @@ static int run_with_config(const po::variables_map& vm) {
                         // inside lobule?
                         if(r <= A*(f + perturbVal)){
                             // gland to fat
-                            *p = ufat;
+                            *p = tissue::ufat;
                             #pragma omp atomic
                             glandVoxels -= 1;
                             #pragma omp atomic
@@ -4146,7 +4126,7 @@ static int run_with_config(const po::variables_map& vm) {
 
             // tissue type
             auto p = static_cast<const unsigned char *>(breast->GetScalarPointer(seedVox));
-            if (*p == ufat || *p == ugland){
+            if (*p == tissue::ufat || *p == tissue::ugland){
                 foundSeed = true;
             }
         }
@@ -4243,7 +4223,7 @@ static int run_with_config(const po::variables_map& vm) {
                     // convert glandular tissue
                     unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
 
-                    if(*p == ufat || *p == ugland){
+                    if(*p == tissue::ufat || *p == tissue::ugland){
 
                         // continuous standard coordinates
                         double coords[3];
@@ -4277,15 +4257,15 @@ static int run_with_config(const po::variables_map& vm) {
                         // inside ligament lobule?
                         if(r <= A*(f + perturbVal)-ligThick){
                             // interior of ligament volume
-                            if(*p == ufat){
-                                *p = tissue.fat;
+                            if(*p == tissue::ufat){
+                                *p = tissue::fat;
                             } else {
-                                *p = tissue.gland;
+                                *p = tissue::gland;
                             }
                             #pragma omp atomic
                             ligedVoxels += 1;
                         } else if(r <= A*(f + perturbVal)) {
-                            *p = tissue.cooper;
+                            *p = tissue::cooper;
                             #pragma omp atomic
                             ligedVoxels += 1;
                         }
@@ -4305,10 +4285,10 @@ static int run_with_config(const po::variables_map& vm) {
         unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(0,0,k));
         for(int j=0; j<dim[1]; j++){
             for(int i=0; i<dim[0]; i++){
-                if(*p == ugland){
-                    *p = tissue.gland;
-                } else if(*p == ufat){
-                    *p = tissue.fat;
+                if(*p == tissue::ugland){
+                    *p = tissue::gland;
+                } else if(*p == tissue::ufat){
+                    *p = tissue::fat;
                 }
                 p++;
             }
@@ -4323,7 +4303,7 @@ static int run_with_config(const po::variables_map& vm) {
         for(int j=0; j<dim[1]; j++){
             for(int k=0; k<dim[2]; k++){
                 unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-                if(p[0] == tissue.fat){
+                if(p[0] == tissue::fat){
                     fatVoxBound[0] = i;
                     goto foundf0;
                 }
@@ -4331,12 +4311,12 @@ static int run_with_config(const po::variables_map& vm) {
         }
     }
 
- foundf0:
+    foundf0:
     for(int i=dim[0]-1; i>=0; i--){
         for(int j=0; j<dim[1]; j++){
             for(int k=0; k<dim[2]; k++){
                 unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-                if(p[0] == tissue.fat){
+                if(p[0] == tissue::fat){
                     fatVoxBound[1] = i;
                     goto foundf1;
                 }
@@ -4344,12 +4324,12 @@ static int run_with_config(const po::variables_map& vm) {
         }
     }
 
- foundf1:
+    foundf1:
     for(int j=0; j<dim[1]; j++){
         for(int i=0; i<dim[0]; i++){
             for(int k=0; k<dim[2]; k++){
                 unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-                if(p[0] == tissue.fat){
+                if(p[0] == tissue::fat){
                     fatVoxBound[2] = j;
                     goto foundf2;
                 }
@@ -4357,12 +4337,12 @@ static int run_with_config(const po::variables_map& vm) {
         }
     }
 
- foundf2:
+    foundf2:
     for(int j=dim[1]-1; j>=0; j--){
         for(int i=0; i<dim[0]; i++){
             for(int k=0; k<dim[2]; k++){
                 unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-                if(p[0] == tissue.fat){
+                if(p[0] == tissue::fat){
                     fatVoxBound[3] = j;
                     goto foundf3;
                 }
@@ -4370,12 +4350,12 @@ static int run_with_config(const po::variables_map& vm) {
         }
     }
 
- foundf3:
+    foundf3:
     for(int k=0; k<dim[2]; k++){
         for(int i=0; i<dim[0]; i++){
             for(int j=0; j<dim[1]; j++){
                 unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-                if(p[0] == tissue.fat){
+                if(p[0] == tissue::fat){
                     fatVoxBound[4] = k;
                     goto foundf4;
                 }
@@ -4383,12 +4363,12 @@ static int run_with_config(const po::variables_map& vm) {
         }
     }
 
- foundf4:
+    foundf4:
     for(int k=dim[2]-1; k>=0; k--){
         for(int i=0; i<dim[0]; i++){
             for(int j=0; j<dim[1]; j++){
                 unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-                if(p[0] == tissue.fat){
+                if(p[0] == tissue::fat){
                     fatVoxBound[5] = k;
                     goto foundf5;
                 }
@@ -4396,12 +4376,12 @@ static int run_with_config(const po::variables_map& vm) {
         }
     }
 
- foundf5:
+    foundf5:
     for(int i=0; i<dim[0]; i++){
         for(int j=0; j<dim[1]; j++){
             for(int k=0; k<dim[2]; k++){
                 unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-                if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
+                if(p[0] == tissue::duct || p[0] == tissue::TDLU || p[0] == tissue::gland){
                     glandVoxBound[0] = i;
                     goto foundg0;
                 }
@@ -4409,12 +4389,12 @@ static int run_with_config(const po::variables_map& vm) {
         }
     }
 
- foundg0:
+    foundg0:
     for(int i=dim[0]-1; i>=0; i--){
         for(int j=0; j<dim[1]; j++){
             for(int k=0; k<dim[2]; k++){
                 unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-                if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
+                if(p[0] == tissue::duct || p[0] == tissue::TDLU || p[0] == tissue::gland){
                     glandVoxBound[1] = i;
                     goto foundg1;
                 }
@@ -4422,12 +4402,12 @@ static int run_with_config(const po::variables_map& vm) {
         }
     }
 
- foundg1:
+    foundg1:
     for(int j=0; j<dim[1]; j++){
         for(int i=0; i<dim[0]; i++){
             for(int k=0; k<dim[2]; k++){
                 unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-                if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
+                if(p[0] == tissue::duct || p[0] == tissue::TDLU || p[0] == tissue::gland){
                     glandVoxBound[2] = j;
                     goto foundg2;
                 }
@@ -4435,12 +4415,12 @@ static int run_with_config(const po::variables_map& vm) {
         }
     }
 
- foundg2:
+    foundg2:
     for(int j=dim[1]-1; j>=0; j--){
         for(int i=0; i<dim[0]; i++){
             for(int k=0; k<dim[2]; k++){
                 unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-                if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
+                if(p[0] == tissue::duct || p[0] == tissue::TDLU || p[0] == tissue::gland){
                     glandVoxBound[3] = j;
                     goto foundg3;
                 }
@@ -4448,12 +4428,12 @@ static int run_with_config(const po::variables_map& vm) {
         }
     }
 
- foundg3:
+    foundg3:
     for(int k=0; k<dim[2]; k++){
         for(int i=0; i<dim[0]; i++){
             for(int j=0; j<dim[1]; j++){
                 unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-                if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
+                if(p[0] == tissue::duct || p[0] == tissue::TDLU || p[0] == tissue::gland){
                     glandVoxBound[4] = k;
                     goto foundg4;
                 }
@@ -4461,12 +4441,12 @@ static int run_with_config(const po::variables_map& vm) {
         }
     }
 
- foundg4:
+    foundg4:
     for(int k=dim[2]-1; k>=0; k--){
         for(int i=0; i<dim[0]; i++){
             for(int j=0; j<dim[1]; j++){
                 unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-                if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
+                if(p[0] == tissue::duct || p[0] == tissue::TDLU || p[0] == tissue::gland){
                     glandVoxBound[5] = k;
                     goto foundg5;
                 }
@@ -4474,7 +4454,7 @@ static int run_with_config(const po::variables_map& vm) {
         }
     }
 
- foundg5:
+    foundg5:
 
     /********************
      * Vascular network
@@ -4486,14 +4466,14 @@ static int run_with_config(const po::variables_map& vm) {
     // veinous drainage - auxillary vein (2 - main), subclavian, intercostal, internal thoracic veins
 
     // find breast extent
-    int internalExtentVox[6];
-
-    internalExtentVox[0] = (fatVoxBound[0]<glandVoxBound[0]) ? fatVoxBound[0] : glandVoxBound[0];
-    internalExtentVox[1] = (fatVoxBound[1]>glandVoxBound[1]) ? fatVoxBound[1] : glandVoxBound[1];
-    internalExtentVox[2] = (fatVoxBound[2]<glandVoxBound[2]) ? fatVoxBound[2] : glandVoxBound[2];
-    internalExtentVox[3] = (fatVoxBound[3]>glandVoxBound[3]) ? fatVoxBound[3] : glandVoxBound[3];
-    internalExtentVox[4] = (fatVoxBound[4]<glandVoxBound[4]) ? fatVoxBound[4] : glandVoxBound[4];
-    internalExtentVox[5] = (fatVoxBound[5]>glandVoxBound[5]) ? fatVoxBound[5] : glandVoxBound[5];
+    int internalExtentVox[6] = {
+        std::min(fatVoxBound[0], glandVoxBound[0]),
+        std::min(fatVoxBound[1], glandVoxBound[1]),
+        std::min(fatVoxBound[2], glandVoxBound[2]),
+        std::min(fatVoxBound[3], glandVoxBound[3]),
+        std::min(fatVoxBound[4], glandVoxBound[4]),
+        std::min(fatVoxBound[5], glandVoxBound[5]),
+    };
 
     int backMinInd = internalExtentVox[0];
 
@@ -4519,7 +4499,7 @@ static int run_with_config(const po::variables_map& vm) {
         for(int k=0; k<dim[2]; k++){
             unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(backMinInd,j,k));
             unsigned char* q = static_cast<unsigned char*>(backPlane->GetScalarPointer(backMinInd,j,k));
-            if(p[0] != tissue.bg && p[0] != tissue.skin){
+            if(p[0] != tissue::bg && p[0] != tissue::skin){
                 q[0] = 1;
                 voxelCount += 1;
                 backMass[0] = backMass[0] + (j - backMass[0])/voxelCount;
@@ -4530,10 +4510,11 @@ static int run_with_config(const po::variables_map& vm) {
         }
     }
 
-    int backMassVox[3];
-    backMassVox[0] = backMinInd;
-    backMassVox[1] = (int)(round(backMass[0]));
-    backMassVox[2] = (int)(round(backMass[1]));
+    int backMassVox[3] = {
+        backMinInd,
+        (int) round(backMass[0]),
+        (int) round(backMass[1]),
+    };
 
     // calculate continuous position of mass center indicies [backMinInd, backMassVox[0], backMassVox[1]]
     double backCenter[3];
@@ -4590,7 +4571,7 @@ static int run_with_config(const po::variables_map& vm) {
             testPos[2] = backCenter[2] + len*sin(arteryAngle[i]);
             breast->ComputeStructuredCoordinates(testPos,voxelPos,lcoords);
             unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(voxelPos));
-            if(p[0] == tissue.bg || p[0] == tissue.skin){
+            if(p[0] == tissue::bg || p[0] == tissue::skin){
                 edge = true;
             }
         }
@@ -4625,7 +4606,7 @@ static int run_with_config(const po::variables_map& vm) {
             testPos[2] = backCenter[2] + len*sin(veinAngle[i]);
             breast->ComputeStructuredCoordinates(testPos,voxelPos,lcoords);
             unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(voxelPos));
-            if(p[0] == tissue.bg || p[0] == tissue.skin){
+            if(p[0] == tissue::bg || p[0] == tissue::skin){
                 edge = true;
             }
         }
@@ -4652,7 +4633,7 @@ static int run_with_config(const po::variables_map& vm) {
         rgen->Next();
 
         bool firstTree = (i == 0);
-        generate_artery(breast, vm, internalExtentVox, &tissue, arteryStartPosList[i],
+        generate_artery(breast, vm, internalExtentVox, arteryStartPosList[i],
             arteryStartDirList[i], nipplePos, arterySeed, outArteryVTIFilename.native(), firstTree);
     }
 
@@ -4663,7 +4644,7 @@ static int run_with_config(const po::variables_map& vm) {
         rgen->Next();
 
         bool firstTree = (i == 0);
-        generate_vein(breast, vm, internalExtentVox, &tissue, veinStartPosList[i],
+        generate_vein(breast, vm, internalExtentVox, veinStartPosList[i],
             veinStartDirList[i], nipplePos, veinSeed, outVeinVTIFilename.native(), firstTree);
     }
 

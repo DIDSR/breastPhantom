@@ -22,17 +22,14 @@
 
 #include <boost/program_options.hpp>
 
-#include "tissueStruct.hxx"
-
 
 void generate_duct(
     vtkImageData* breast,
-    boost::program_options::variables_map vm,
+    const boost::program_options::variables_map &vm,
     vtkPoints* TDLUloc,
     vtkDoubleArray* TDLUattr,
     unsigned char compartmentId,
     int* boundBox,
-    tissueStruct* tissue,
     double* sposPtr,
     double* sdirPtr,
     int seed

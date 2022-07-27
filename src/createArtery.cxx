@@ -22,6 +22,8 @@
 #include <vtkXMLImageDataWriter.h>
 #include <vtkXMLImageDataReader.h>
 
+#include "tissues.hxx"
+
 
 using namespace std;
 namespace po = boost::program_options;
@@ -29,8 +31,15 @@ namespace po = boost::program_options;
 /* This function creates arterial network, inserts it into the segmented
  * breast and saves the tree */
 void generate_artery(
-    vtkImageData* breast, po::variables_map vm, int* boundBox, tissueStruct* tissue,
-    double* sposPtr, double* sdirPtr, double* nipplePos, int seed, const std::string& arteryFilename, bool firstTree
+    vtkImageData* breast,
+    const boost::program_options::variables_map& vm,
+    int* boundBox,
+    double* sposPtr,
+    double* sdirPtr,
+    double* nipplePos,
+    int seed,
+    const std::string& arteryFilename,
+    bool firstTree
 ) {
     double spos[3];
     double sdir[3];
@@ -69,8 +78,6 @@ void generate_artery(
 
     treeInit.boundBox = boundBox;
 
-    treeInit.tissue = tissue;
-
     treeInit.breast = breast;
 
     // create arterial tree
@@ -87,36 +94,36 @@ void generate_artery(
         myTree.fill->GetExtent(fillExtent);
         for(int a=fillExtent[0]; a<=fillExtent[1]; a++){
             for(int b=fillExtent[2]; b<=fillExtent[3]; b++){
-    for(int c=fillExtent[4]; c<=fillExtent[5]; c++){
-        double* v = static_cast<double*>(myTree.fill->GetScalarPointer(a,b,c));
-        // set distance to 0 if fill voxel is not in breast, otherwise
-        // initialize with squared distance to tree base
+                for(int c=fillExtent[4]; c<=fillExtent[5]; c++){
+                    double* v = static_cast<double*>(myTree.fill->GetScalarPointer(a,b,c));
+                    // set distance to 0 if fill voxel is not in breast, otherwise
+                    // initialize with squared distance to tree base
 
-        // fill voxel location
-        vtkIdType id;
-        int coord[3];
-        coord[0] = a;
-        coord[1] = b;
-        coord[2] = c;
-        id = myTree.fill->ComputePointId(coord);
-        // get spatial coordinates of fill voxel
-        double pos[3];
-        myTree.fill->GetPoint(id,pos);
-        // compare to nearest breast voxel id
-        unsigned char* breastVal = static_cast<unsigned char *>(breast->GetScalarPointer());
-        bool inBreast = true;
-        unsigned char voxelVal = breastVal[breast->FindPoint(pos)];
-        if(voxelVal == tissue->skin || voxelVal == tissue->bg){
-            inBreast = false;
-        }
-        if(inBreast){
-            // inside breast
-            v[0] = vtkMath::Distance2BetweenPoints(spos,pos);
-        } else {
-            // outside breast, set distance to zero
-            v[0] = 0.0;
-        }
-    }
+                    // fill voxel location
+                    vtkIdType id;
+                    int coord[3];
+                    coord[0] = a;
+                    coord[1] = b;
+                    coord[2] = c;
+                    id = myTree.fill->ComputePointId(coord);
+                    // get spatial coordinates of fill voxel
+                    double pos[3];
+                    myTree.fill->GetPoint(id,pos);
+                    // compare to nearest breast voxel id
+                    unsigned char* breastVal = static_cast<unsigned char *>(breast->GetScalarPointer());
+                    bool inBreast = true;
+                    unsigned char voxelVal = breastVal[breast->FindPoint(pos)];
+                    if(voxelVal == tissue::skin || voxelVal == tissue::bg){
+                        inBreast = false;
+                    }
+                    if(inBreast){
+                        // inside breast
+                        v[0] = vtkMath::Distance2BetweenPoints(spos,pos);
+                    } else {
+                        // outside breast, set distance to zero
+                        v[0] = 0.0;
+                    }
+                }
             }
         }
     } else {
@@ -140,6 +147,4 @@ void generate_artery(
     fillWriter->SetFileName(arteryFilename.c_str());
     fillWriter->SetInputData(myTree.fill);
     fillWriter->Write();
-
-    return;
 }

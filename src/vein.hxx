@@ -22,8 +22,6 @@
 #include <boost/math/distributions/beta.hpp>
 #include <boost/program_options.hpp>
 
-#include "tissueStruct.hxx"
-
 
 // forward declaration
 class veinSeg;
@@ -34,13 +32,11 @@ class veinBr;
 * structure for veinTree initialization
 *
 **********************************************/
-struct veinTreeInit{
+struct veinTreeInit {
     // random number generator seed
     int seed;
     // pointer to bound box
     int *boundBox;
-    // tissue values
-    tissueStruct* tissue;
     // FOV
     double startPos[3];
     double endPos[3];
@@ -60,7 +56,7 @@ struct veinTreeInit{
 *
 **********************************************/
 
-class veinTree {
+class veinTree final {
 
     friend class veinBr;
     friend class veinSeg;
@@ -73,8 +69,6 @@ class veinTree {
 public:
     // pointer to breast bound box
     int *boundBox;
-    // tissue values
-    tissueStruct* tissue;
     // maximum number of branches
     unsigned int maxBranch;
     // length of base branch
@@ -113,7 +107,7 @@ public:
 *
 **********************************************/
 
-class veinBr {
+class veinBr final {
     // this is one branch of a tree
     // sType refers to segment type (equivalent to tree type)
 
@@ -181,7 +175,7 @@ public:
 *
 **********************************************/
 
-class veinSeg {
+class veinSeg final {
     // this is one segment of a branch
 
     friend class veinBr;

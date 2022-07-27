@@ -25,8 +25,17 @@ namespace po = boost::program_options;
 /* This function creates a duct tree within a given compartment, inserts it into the segmented
  * breast and saves the tree */
 
-void generate_duct(vtkImageData* breast, po::variables_map vm, vtkPoints* TDLUloc, vtkDoubleArray* TDLUattr,
-             unsigned char compartmentId, int* boundBox, tissueStruct* tissue, double* sposPtr, double* sdirPtr, int seed){
+void generate_duct(
+    vtkImageData* breast,
+    const boost::program_options::variables_map &vm,
+    vtkPoints* TDLUloc,
+    vtkDoubleArray* TDLUattr,
+    unsigned char compartmentId,
+    int* boundBox,
+    double* sposPtr,
+    double* sdirPtr,
+    int seed
+){
 
     double spos[3];
     double sdir[3];
@@ -67,8 +76,6 @@ void generate_duct(vtkImageData* breast, po::variables_map vm, vtkPoints* TDLUlo
 
     treeInit.compartmentId = compartmentId;
 
-    treeInit.tissue = tissue;
-
     treeInit.breast = breast;
 
     treeInit.TDLUloc = TDLUloc;
@@ -83,38 +90,37 @@ void generate_duct(vtkImageData* breast, po::variables_map vm, vtkPoints* TDLUlo
     // initialize fill map based on distance to start position
     int fillExtent[6];
     myTree.fill->GetExtent(fillExtent);
-#pragma omp parallel for
+
+    #pragma omp parallel for
     for(int a=fillExtent[0]; a<=fillExtent[1]; a++){
         for(int b=fillExtent[2]; b<=fillExtent[3]; b++){
             for(int c=fillExtent[4]; c<=fillExtent[5]; c++){
-    double* v = static_cast<double*>(myTree.fill->GetScalarPointer(a,b,c));
-    // set distance to 0 if fill voxel is not in compartment, otherwise
-    // initialize with squared distance to tree base
+                double* v = static_cast<double*>(myTree.fill->GetScalarPointer(a,b,c));
+                // set distance to 0 if fill voxel is not in compartment, otherwise
+                // initialize with squared distance to tree base
 
-    // fill voxel location
-    vtkIdType id;
-    int coord[3];
-    coord[0] = a;
-    coord[1] = b;
-    coord[2] = c;
-    id = myTree.fill->ComputePointId(coord);
-    // get spatial coordinates of fill voxel
-    double pos[3];
-    myTree.fill->GetPoint(id,pos);
-    // compare to nearest breast voxel id
-    unsigned char* breastVal = static_cast<unsigned char *>(breast->GetScalarPointer());
-    if(breastVal[breast->FindPoint(pos)] == compartmentId){
-        // inside compartment
-        v[0] = vtkMath::Distance2BetweenPoints(spos, pos);
-    } else {
-        // outside compartment, set distance to zero
-        v[0] = 0.0;
-    }
+                // fill voxel location
+                vtkIdType id;
+                int coord[3];
+                coord[0] = a;
+                coord[1] = b;
+                coord[2] = c;
+                id = myTree.fill->ComputePointId(coord);
+                // get spatial coordinates of fill voxel
+                double pos[3];
+                myTree.fill->GetPoint(id,pos);
+                // compare to nearest breast voxel id
+                unsigned char* breastVal = static_cast<unsigned char *>(breast->GetScalarPointer());
+                if(breastVal[breast->FindPoint(pos)] == compartmentId){
+                    // inside compartment
+                    v[0] = vtkMath::Distance2BetweenPoints(spos, pos);
+                } else {
+                    // outside compartment, set distance to zero
+                    v[0] = 0.0;
+                }
             }
         }
     }
 
     myTree.head = new ductBr(spos, sdir, srad, &myTree);
-
-    return;
 }

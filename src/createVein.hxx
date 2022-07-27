@@ -22,14 +22,11 @@
 
 #include <boost/program_options.hpp>
 
-#include "tissueStruct.hxx"
-
 
 void generate_vein(
     vtkImageData* breast,
-    boost::program_options::variables_map vm,
+    const boost::program_options::variables_map& vm,
     int* boundBox,
-    tissueStruct* tissue,
     double* sposPtr,
     double* sdirPtr,
     double* nipplePos,

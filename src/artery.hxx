@@ -22,8 +22,6 @@
 #include <boost/math/distributions/beta.hpp>
 #include <boost/program_options.hpp>
 
-#include "tissueStruct.hxx"
-
 
 // forward declaration
 class arterySeg;
@@ -34,13 +32,11 @@ class arteryBr;
 * structure for arteryTree initialization
 *
 **********************************************/
-struct arteryTreeInit{
+struct arteryTreeInit final {
     // random number generator seed
     int seed;
     // pointer to bound box
     int *boundBox;
-    // tissue values
-    tissueStruct* tissue;
     // FOV
     double startPos[3];
     double endPos[3];
@@ -60,7 +56,7 @@ struct arteryTreeInit{
 *
 **********************************************/
 
-class arteryTree {
+class arteryTree final {
 
     friend class arteryBr;
     friend class arterySeg;
@@ -73,8 +69,6 @@ class arteryTree {
 public:
     // pointer to breast bound box
     int *boundBox;
-    // tissue values
-    tissueStruct* tissue;
     // maximum number of branches
     unsigned int maxBranch;
     // base length of initial branch
@@ -115,7 +109,7 @@ public:
 *
 **********************************************/
 
-class arteryBr {
+class arteryBr final {
     // this is one branch of a tree
     // sType refers to segment type (equivalent to tree type)
 
@@ -182,7 +176,7 @@ public:
 *
 **********************************************/
 
-class arterySeg {
+class arterySeg final {
     // this is one segment of a branch
 
     friend class arteryBr;
