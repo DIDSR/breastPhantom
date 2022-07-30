@@ -1,10 +1,11 @@
+.. _config params:
+
 Configuration Files Parameters
 ==============================
 
-The configuration file contains all the parameters necessary to generate a breast phantom.  They are divided into several categories, primarily by tissue type.
-In the following tables each parameter is given a brief description.
+The configuration file contains all the parameters necessary to generate a breast phantom. They are divided into several categories, primarily by tissue type. In the following tables each parameter is given a brief description.
 
-base parameters
+Base Parameters
 ----------------
 ================== ========== =========================================================
 Name               Type       Notes
@@ -20,7 +21,7 @@ base.targetFatFrac float (mm) desired fraction of interior breast volume contain
 base.seed          integer    random number seed (chosen randomly if not specified)
 ================== ========== =========================================================
 
-shape parameters
+Shape Parameters
 ----------------
 
 ===================== =============== ================================================
@@ -59,7 +60,7 @@ shape.turnTopH0       float           turn top deformation parameter H0
 shape.turnTopH1       float           turn top deformation parameter H1
 ===================== =============== ================================================
 
-glandular compartment parameters
+Glandular Compartment Parameters
 --------------------------------
 
 ================================== ========== ==================================================================================
@@ -92,8 +93,8 @@ compartments.nippleStrength        float      nipple strength
 compartments.voronSeedRadius       float (mm) radius from point to check Voronoi seed distance
 ================================== ========== ==================================================================================
 
-TDLU parameters
----------------
+TDLU (Terminal Duct Lobular Unit) Parameters
+--------------------------------------------
 
 ============== ========== ===================
 Name           Type       Notes
@@ -105,7 +106,7 @@ TDLU.minWidth  float (mm) minimum TDLU width
 ============== ========== ===================
 
 
-Perlin noise parameters
+Perlin Noise Parameters
 -----------------------
 
 ==================== ======= ====================================
@@ -124,7 +125,7 @@ perlin.shiftNoiseGen integer shift noise generation seed
 ==================== ======= ====================================
 
 
-Compartment boundary noise parameters
+Compartment Boundary Noise Parameters
 -------------------------------------
 
 ===================== ===== ======================================
@@ -137,7 +138,7 @@ boundary.persistence  float octave signal decay
 ===================== ===== ======================================
 
 
-fat lobule boundary perturbation noise parameters
+Fat Lobule Boundary Perturbation Noise Parameters
 -------------------------------------------------
 
 ==================== ===== ======================================
@@ -150,7 +151,7 @@ perturb.persistence  float octave signal decay
 ==================== ===== ======================================
 
 
-fat glandular buffer noise parameters
+Fat Glandular Buffer Noise Parameters
 -------------------------------------
 
 =================== ===== ======================================
@@ -163,7 +164,7 @@ buffer.persistence  float octave signal decay
 =================== ===== ======================================
 
 
-Voronoi segmentation variables
+Voronoi Segmentation Variables
 ------------------------------
 
 =============================== ============= ============================================
@@ -203,7 +204,7 @@ voronoi.maxStrGlandInGland      float         maximum strength
 voronoi.seedRadius              float (mm)    check seeds in radius
 =============================== ============= ============================================
 
-fat lobule parameters
+Fat Lobule Parameters
 ---------------------
 
 ================= ========== ===========================================================================
@@ -219,7 +220,7 @@ fat.minCoeffStr   float      minimum of absolute value of Fourier coefficient as
 fat.maxLobuleTry  integer    maximum number of trial lobules
 ================= ========== ===========================================================================
 
-ductal tree parameters
+Ductal Tree Parameters
 ----------------------
 
 ================== ========== ==========================================
@@ -233,7 +234,7 @@ ductTree.nFillY    integer    number of voxels for tree density tracking
 ductTree.nFillZ    integer    number of voxels for tree density tracking
 ================== ========== ==========================================
 
-ductal branch parameters
+Ductal Branch Parameters
 ------------------------
 
 .. tabularcolumns:: |l|c|p{8cm}|
@@ -274,7 +275,7 @@ ductBr.minAngle      float      min angle between parent end direction and child
 ductBr.maxAngle      float      max angle between parent end direction and child start direction for children after first (fraction of pi radians)
 ==================== ========== ==================================================================================================================
 
-ductal segment parameters
+Ductal Segment Parameters
 -------------------------
 
 ========================= ========== ===========================================================================
@@ -298,7 +299,7 @@ ductSeg.absMaxTry         integer    total number of segment tries before comple
 ductSeg.roiStep           float (mm) step size for checking segment is valid
 ========================= ========== ===========================================================================
 
-vessel tree parameters
+Vessel Tree Parameters
 ----------------------
 ==================== ========== ==========================================
 Name                 Type       Notes
@@ -311,7 +312,7 @@ vesselTree.nFillY    integer    number of voxels for tree density tracking
 vesselTree.nFillZ    integer    number of voxels for tree density tracking
 ==================== ========== ==========================================
 
-vessel branch parameters
+Vessel Branch Parameters
 ------------------------
 
 .. tabularcolumns:: |l|c|p{8cm}|
@@ -355,7 +356,7 @@ vesselBr.maxAngle      float      max angle between parent end direction and chi
 ====================== ========== ==================================================================================================================
 
 
-vessel segment parameters
+Vessel Segment Parameters
 -------------------------
 
 ===================== ========== ===========================================================================
