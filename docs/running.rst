@@ -3,7 +3,7 @@ Running the Software
 
 The executable breastPhantom is run from the command line and takes a single required command line argument::
 
-    > breastPhantom -c [FILE]
+    breastPhantom -c [FILE]
 
 where ``[FILE]`` is a configuration file which specifies all the breast model parameters.
 

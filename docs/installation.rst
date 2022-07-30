@@ -18,17 +18,20 @@ Compilation
 
 First, install the packages necessary to compile the software (reminder: instructions are specific to Ubuntu, consult your operating system documentation for analagous package names and installation instructions)  From a terminal command prompt::
 
-    > sudo apt-get install build-essential gcc g++ cmake vtk6 libvtk6-dev \
+    sudo apt-get install build-essential gcc g++ cmake vtk6 libvtk6-dev \
         libblas-dev liblapack-dev libboost-dev libboost-program-options-dev zlib1g-dev
 
 Next, clone the git repository::
 
-    > git clone https://github.com/DIDSR/breastPhantom
+    git clone https://github.com/DIDSR/breastPhantom
 
 From a suitable build directory generate a Makefile using cmake and run make::
 
-    > cmake <path to repository>
-    > make
+    cmake <path to repository>
+
+.. code-block::
+
+    make
 
 where ``<path to repository>`` is the directory containing the cloned repository.
 
