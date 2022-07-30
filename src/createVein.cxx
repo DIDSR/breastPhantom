@@ -17,7 +17,6 @@
 #include "vein.hxx"
 #include "createVein.hxx"
 
-#include <vtkVersion.h>
 #include <vtkMath.h>
 #include <vtkSmartPointer.h>
 #include <vtkXMLImageDataWriter.h>
@@ -139,11 +138,7 @@ void generate_vein(
         vtkSmartPointer<vtkXMLImageDataWriter>::New();
 
     fillWriter->SetFileName(veinFilename.c_str());
-#if VTK_MAJOR_VERSION <= 5
-    fillWriter->SetInput(myTree.fill);
-#else
     fillWriter->SetInputData(myTree.fill);
-#endif
     fillWriter->Write();
 
     return;

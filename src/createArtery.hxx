@@ -18,7 +18,6 @@
 
 #include <string>
 
-#include <vtkVersion.h>
 #include <vtkSmartPointer.h>
 #include <vtkImageData.h>
 

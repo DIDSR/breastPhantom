@@ -37,7 +37,6 @@
 #include <boost/iostreams/filtering_stream.hpp>
 
 // vtk stuff
-#include <vtkVersion.h>
 #include <vtkSmartPointer.h>
 #include <vtkMath.h>
 #include <vtkPolyData.h>
@@ -1268,20 +1267,12 @@ static int run_with_config(po::variables_map& vm) {
     frontPoly->SetPoints(frontPts);
     vtkSmartPointer<vtkVertexGlyphFilter> frontVertAdd =
         vtkSmartPointer<vtkVertexGlyphFilter>::New();
-#if VTK_MAJOR_VERSION <= 5
-    frontVertAdd->SetInput(frontPoly);
-#else
     frontVertAdd->SetInputData(frontPoly);
-#endif
 
     frontVertAdd->Update();
     vtkSmartPointer<vtkCleanPolyData> cleanFront =
         vtkSmartPointer<vtkCleanPolyData>::New();
-#if VTK_MAJOR_VERSION <= 5
-    cleanFront->SetInput(frontVertAdd->GetOutput());
-#else
     cleanFront->SetInputConnection(frontVertAdd->GetOutputPort());
-#endif
     cleanFront->SetTolerance(pointSep);
     cleanFront->Update();
 
@@ -1328,19 +1319,11 @@ static int run_with_config(po::variables_map& vm) {
     backPoly->SetPoints(backPts);
     vtkSmartPointer<vtkVertexGlyphFilter> backVertAdd =
         vtkSmartPointer<vtkVertexGlyphFilter>::New();
-#if VTK_MAJOR_VERSION <= 5
-    backVertAdd->SetInput(backPoly);
-#else
     backVertAdd->SetInputData(backPoly);
-#endif
     backVertAdd->Update();
     vtkSmartPointer<vtkCleanPolyData> cleanBack =
         vtkSmartPointer<vtkCleanPolyData>::New();
-#if VTK_MAJOR_VERSION <= 5
-    cleanBack->SetInput(backVertAdd->GetOutput());
-#else
     cleanBack->SetInputConnection(backVertAdd->GetOutputPort());
-#endif
     cleanBack->SetTolerance(pointSep);
     cleanBack->Update();
 
@@ -1400,19 +1383,11 @@ static int run_with_config(po::variables_map& vm) {
     ringPoly->SetPoints(ringPts);
     vtkSmartPointer<vtkVertexGlyphFilter> ringVertAdd =
         vtkSmartPointer<vtkVertexGlyphFilter>::New();
-#if VTK_MAJOR_VERSION <= 5
-    ringVertAdd->SetInput(ringPoly);
-#else
     ringVertAdd->SetInputData(ringPoly);
-#endif
     ringVertAdd->Update();
     vtkSmartPointer<vtkCleanPolyData> cleanRing =
         vtkSmartPointer<vtkCleanPolyData>::New();
-#if VTK_MAJOR_VERSION <= 5
-    cleanRing->SetInput(ringVertAdd->GetOutput());
-#else
     cleanRing->SetInputConnection(ringVertAdd->GetOutputPort());
-#endif
     cleanRing->SetTolerance(pointSep);
     cleanRing->Update();
 
@@ -1484,11 +1459,7 @@ static int run_with_config(po::variables_map& vm) {
     vtkSmartPointer<vtkSurfaceReconstructionFilter> breastFilter =
         vtkSmartPointer<vtkSurfaceReconstructionFilter>::New();
 
-#if VTK_MAJOR_VERSION <= 5
-    breastFilter->SetInput(breastPoly);
-#else
     breastFilter->SetInputData(breastPoly);
-#endif
     breastFilter->Update();
 
     // fix bug in vtkSurfaceReconstructionFilter
@@ -1498,11 +1469,7 @@ static int run_with_config(po::variables_map& vm) {
     vtkSmartPointer<vtkContourFilter> breastContourFilter =
         vtkSmartPointer<vtkContourFilter>::New();
 
-#if VTK_MAJOR_VERSION <= 5
-    breastContourFilter->SetInput(breastFilter->GetOutput());
-#else
     breastContourFilter->SetInputConnection(breastFilter->GetOutputPort());
-#endif
     breastContourFilter->ComputeNormalsOn();
     breastContourFilter->SetValue(0, 0.0);
     breastContourFilter->Update();
@@ -1510,11 +1477,7 @@ static int run_with_config(po::variables_map& vm) {
     vtkSmartPointer<vtkReverseSense> breastSenseFilter =
         vtkSmartPointer<vtkReverseSense>::New();
 
-#if VTK_MAJOR_VERSION <= 5
-    breastSenseFilter->SetInput(breastContourFilter->GetOutput());
-#else
     breastSenseFilter->SetInputConnection(breastContourFilter->GetOutputPort());
-#endif
     breastSenseFilter->ReverseCellsOn();
     breastSenseFilter->ReverseNormalsOn();
     breastSenseFilter->Update();
@@ -1537,32 +1500,19 @@ static int run_with_config(po::variables_map& vm) {
     vtkSmartPointer<vtkTransformPolyDataFilter> fixed =
         vtkSmartPointer<vtkTransformPolyDataFilter>::New();
     fixed->SetInputData(breastSenseFilter->GetOutput());
-#if VTK_MAJOR_VERSION <= 5
-    fixed->SetInput(breastSenseFilter->GetOutput());
-#else
-    fixed->SetInputData(breastSenseFilter->GetOutput());
-#endif
     fixed->SetTransform(transp);
     fixed->Update();
 
     // clean mesh
     vtkSmartPointer<vtkCleanPolyData> cleanPoly =
         vtkSmartPointer<vtkCleanPolyData>::New();
-#if VTK_MAJOR_VERSION <= 5
-    cleanPoly->SetInput(fixed->GetOutput());
-#else
     cleanPoly->SetInputConnection(fixed->GetOutputPort());
-#endif
 
     // decimate mesh
     vtkSmartPointer<vtkDecimatePro> decimate =
         vtkSmartPointer<vtkDecimatePro>::New();
     decimate->SetTargetReduction(0.25);
-#if VTK_MAJOR_VERSION <= 5
-    decimate->SetInput(cleanPoly->GetOutput());
-#else
     decimate->SetInputConnection(cleanPoly->GetOutputPort());
-#endif
     decimate->Update();
 
     vtkSmartPointer<vtkPolyData> innerPoly =
@@ -1613,13 +1563,7 @@ static int run_with_config(po::variables_map& vm) {
     breast->SetOrigin(origin);
 
     // allocate unsigned char
-#if VTK_MAJOR_VERSION <= 5
-    breast->SetNumberOfScalarComponents(1);
-    breast->SetScalarTypeToUnsignedChar();
-    breast->AllocateScalars();
-#else
     breast->AllocateScalars(VTK_UNSIGNED_CHAR,1);
-#endif
 
     int originIndex[3] = {0, 0, 0};
     double originCoords[3];
@@ -2875,11 +2819,8 @@ static int run_with_config(po::variables_map& vm) {
     // add verticies
     vtkSmartPointer<vtkVertexGlyphFilter> vertexGlyphFilter2 =
         vtkSmartPointer<vtkVertexGlyphFilter>::New();
-#if VTK_MAJOR_VERSION <= 5
-    vertexGlyphFilter2->AddInput(seedSet);
-#else
+
     vertexGlyphFilter2->AddInputData(seedSet);
-#endif
     vertexGlyphFilter2->Update();
 
     findSeed->SetDataSet(vertexGlyphFilter2->GetOutput());
@@ -4625,13 +4566,7 @@ static int run_with_config(po::variables_map& vm) {
     backPlane->SetOrigin(breast->GetOrigin());
 
     // allocate unsigned char
-#if VTK_MAJOR_VERSION <= 5
-    backPlane->SetNumberOfScalarComponents(1);
-    backPlane->SetScalarTypeToUnsignedChar();
-    backPlane->AllocateScalars();
-#else
     backPlane->AllocateScalars(VTK_UNSIGNED_CHAR,1);
-#endif
 
     double backMass[2] = {0.0, 0.0};
     long long int voxelCount = 0;
@@ -4799,11 +4734,7 @@ static int run_with_config(po::variables_map& vm) {
         vtkSmartPointer<vtkXMLImageDataWriter>::New();
 
     writerSeg5->SetFileName(outVTIFilename.c_str());
-#if VTK_MAJOR_VERSION <= 5
-    writerSeg5->SetInput(breast);
-#else
     writerSeg5->SetInputData(breast);
-#endif
     writerSeg5->Write();
 
     // save metaimage header

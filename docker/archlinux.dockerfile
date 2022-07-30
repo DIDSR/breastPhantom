@@ -3,6 +3,7 @@ FROM archlinux:base-devel
 
 RUN <<EOT
     pacman -Suy --noconfirm
+
     # build tools
     pacman -S --noconfirm gcc git wget cmake
     # dependencies

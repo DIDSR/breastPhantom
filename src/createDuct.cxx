@@ -16,7 +16,6 @@
 #include "duct.hxx"
 #include "createDuct.hxx"
 
-#include <vtkVersion.h>
 #include <vtkMath.h>
 
 

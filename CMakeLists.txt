@@ -22,8 +22,8 @@ if (NOT VTK_FOUND)
     find_package(VTK REQUIRED)
     include(${VTK_USE_FILE})
 endif()
-if (VTK_VERSION VERSION_LESS 5.10)
-    message(FATAL_ERROR "Minimum supported version for VTK is 5.10")
+if (VTK_VERSION VERSION_LESS 6.0)
+    message(FATAL_ERROR "Minimum supported version for VTK is 6")
 endif()
 
 # OpenMP

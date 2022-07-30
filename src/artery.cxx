@@ -20,7 +20,6 @@
 
 #include <omp.h>
 
-#include <vtkVersion.h>
 #include <vtkMath.h>
 
 
@@ -51,14 +50,7 @@ arteryTree::arteryTree(po::variables_map o, arteryTreeInit *init):
         origin[i] = init->startPos[i]+spacing[i]/2.0;
     }
     fill->SetOrigin(origin);
-
-#if VTK_MAJOR_VERSION <= 5
-    fill->SetNumberOfScalarComponents(1);
-    fill->SetScalarTypeToDouble();
-    fill->AllocateScalars();
-#else
     fill->AllocateScalars(VTK_DOUBLE,1);
-#endif
 
     numBranch = 0;
     maxBranch = o["vesselTree.maxBranch"].as<uint>();
