@@ -5,6 +5,49 @@ project(breastPhantom
     LANGUAGES CXX
 )
 
+# C++ standards
+set_property(GLOBAL PROPERTY CXX_STANDARD 20)
+set_property(GLOBAL PROPERTY CXX_STANDARD_REQUIRED ON)
+add_compile_options(-std=gnu++20)
+
+# defaults to release mode
+if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+endif()
+
+# add optimization options to release
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    # disable PIC
+    set_property(GLOBAL PROPERTY INTERFACE_POSITION_INDEPENDENT_CODE OFF)
+    set_property(GLOBAL PROPERTY POSITION_INDEPENDENT_CODE OFF)
+    set_property(GLOBAL PROPERTY INTERPROCEDURAL_OPTIMIZATION ON)
+
+    # remove binary exported names
+    set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+    set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+    set(CMAKE_ENABLE_EXPORTS OFF)
+
+    # generic optimizations
+    set_property(GLOBAL PROPERTY OPTIMIZE_DEPENDENCIES ON)
+    add_compile_options(-march=native -mtune=native)
+    add_compile_options(-flto -fuse-linker-plugin -fwhole-program)
+endif()
+
+# Source files
+add_executable(${PROJECT_NAME}
+    src/breastPhantom.cxx
+    src/artery.cxx
+    src/createArtery.cxx
+    src/duct.cxx
+    src/createDuct.cxx
+    src/vein.cxx
+    src/createVein.cxx
+    src/perlinNoise.cxx
+)
+target_include_directories(${PROJECT_NAME}
+    PRIVATE "$(PROJECT_SOURCE_DIR)/src"
+)
+
 # OpenMP
 find_package(OpenMP REQUIRED)
 
@@ -51,52 +94,19 @@ else()
     endif()
 endif()
 
-# OpenMP
-find_package(OpenMP REQUIRED)
-
 # spdlog (logging library)
-FetchContent_Declare(
-    spdlog
+FetchContent_Declare(spdlog
     GIT_REPOSITORY https://github.com/gabime/spdlog.git
     GIT_TAG        76fb40d95455f249bd70824ecfcae7a8f0930fa3 # v1.10.0
 )
 FetchContent_MakeAvailable(spdlog)
 
-# Optimizations and standards
-set_property(GLOBAL PROPERTY CXX_STANDARD 20)
-set_property(GLOBAL PROPERTY CXX_STANDARD_REQUIRED ON)
-add_compile_options(-std=gnu++20)
-
-set_property(GLOBAL PROPERTY INTERFACE_POSITION_INDEPENDENT_CODE OFF)
-set_property(GLOBAL PROPERTY INTERPROCEDURAL_OPTIMIZATION true)
-if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
-endif()
-
-set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
-set(CMAKE_ENABLE_EXPORTS OFF)
-
-# Source files
-include_directories("$(PROJECT_SOURCE_DIR)/src")
-add_executable(${PROJECT_NAME}
-    src/breastPhantom.cxx
-    src/artery.cxx
-    src/createArtery.cxx
-    src/duct.cxx
-    src/createDuct.cxx
-    src/vein.cxx
-    src/createVein.cxx
-    src/perlinNoise.cxx
-)
-
 # Linking
-target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-        lapack blas OpenMP::OpenMP_CXX
-        ${VTK_LIBRARIES}
-        boost_program_options boost_iostreams
-        spdlog::spdlog_header_only
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    lapack blas OpenMP::OpenMP_CXX
+    ${VTK_LIBRARIES}
+    boost_program_options boost_iostreams
+    spdlog::spdlog_header_only
 )
 if (NOT VTK_MAJOR_VERSION LESS 9)
     vtk_module_autoinit(
