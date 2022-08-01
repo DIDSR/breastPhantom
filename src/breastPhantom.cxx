@@ -37,6 +37,8 @@
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 
+#include <spdlog/spdlog.h>
+
 // vtk stuff
 #include <vtkSmartPointer.h>
 #include <vtkMath.h>
@@ -91,6 +93,28 @@ namespace po = boost::program_options;
 unsigned int ductTree::num = 0;
 unsigned int arteryTree::num = 0;
 unsigned int veinTree::num = 0;
+
+
+// Formatter for std::filesystem::path, based on
+// https://fmt.dev/latest/api.html#formatting-user-defined-types
+template <>
+struct fmt::formatter<fs::path> {
+    constexpr inline auto parse(format_parse_context& ctx) const -> decltype(ctx.begin()) {
+        auto it = ctx.begin(), end = ctx.end();
+        // Check if reached the end of the range:
+        if (it != end && *it != '}') {
+            throw format_error("std::filesystem::path does not accept format specifiers");
+        }
+        // Return an iterator past the end of the parsed range:
+        return it;
+    }
+
+    template <typename FormatContext>
+    auto format(const fs::path& path, FormatContext& ctx) const -> decltype(ctx.out()) {
+        // ctx.out() is an output iterator to write to.
+        return fmt::format_to(ctx.out(), "\"{}\"", path.native());
+    }
+};
 
 
 [[gnu::cold]]
@@ -394,7 +418,7 @@ static po::variables_map parse_config(const std::span<const char *>& args) {
     po::options_description cmdLineOpt("Command line options");
     cmdLineOpt.add_options()
         ("help,h", "prints help information (use --help for all the options)")
-        ("config,c", po::value<std::string>()->required(), "name of configuration file")
+        ("config,c", po::value<fs::path>()->required(), "name of configuration file")
         ;
 
     // all of the options
@@ -409,21 +433,31 @@ static po::variables_map parse_config(const std::span<const char *>& args) {
     // show help and exit, if asked
     if (vm.contains("help")) {
         const auto& helpOptions = show_full_help(args) ? all : cmdLineOpt;
-        std::cout << helpOptions << std::endl;
+        std::cout << helpOptions;
         exit(EXIT_SUCCESS);
     }
     po::notify(vm);
 
-    std::string configFile = vm["config"].as<std::string>();
     // read configuration file
-    std::ifstream inConfig(configFile.c_str());
-    if (!inConfig) {
-        std::cerr << "Could not read configuration file " << std::quoted(configFile) << std::endl;
+    const auto configFile = vm["config"].as<fs::path>();
+    try {
+        auto inConfig = std::ifstream(configFile);
+        // failbit cannot be set, since po::parse_config_file will
+        // try reading past EOF, resulting in error
+        inConfig.exceptions(std::ios::badbit);
+        if (!inConfig) {
+            int errcode = static_cast<int>(std::errc::no_such_file_or_directory);
+            throw std::system_error(errcode, std::system_category());
+        }
+
+        po::store(parse_config_file(inConfig, configFileOpt), vm);
+        inConfig.close();
+
+    } catch (const std::exception& error) {
+        spdlog::critical("Could not read configuration file {}", configFile);
+        spdlog::debug("Error reading config file: {}", error.what());
         exit(EXIT_FAILURE);
     }
-
-    po::store(parse_config_file(inConfig, configFileOpt), vm);
-    inConfig.close();
 
     po::notify(vm);
     return vm;
@@ -513,8 +547,7 @@ static int run_with_config(const po::variables_map& vm) {
         // try to create it
         if (!fs::create_directory(outputDir)) {
             // couldn't create directory
-            std::cerr << "Could not create directory " << outputDir.path() << std::endl;
-            std::cerr << "Exiting..." << std::endl;
+            spdlog::critical("Could not create directory {}", outputDir.path());
             return EXIT_FAILURE;
         }
         outputDir.refresh();
@@ -522,8 +555,7 @@ static int run_with_config(const po::variables_map& vm) {
     // is it a directory?
     if (!outputDir.is_directory()){
         // error, not a directory
-        std::cerr << "Specified path is not a valid directory" << std::endl;
-        std::cerr << "Exiting..." << std::endl;
+        spdlog::critical("Specified path {} is not a valid directory", outputDir.path());
         return EXIT_FAILURE;
     }
 
@@ -545,14 +577,13 @@ static int run_with_config(const po::variables_map& vm) {
 
     // copy over config file
     try {
-        const auto configFilename = vm["config"].as<std::string>();
+        const auto configFilename = vm["config"].as<fs::path>();
         fs::copy_file(configFilename, cfgOutFilename);
 
+        spdlog::info("cfgOutFilename written to {}", cfgOutFilename);
     } catch (const std::exception& error) {
-        cerr << "Warning: "
-            << "Unable to write config file " << cfgOutFilename << ": "
-            << error.what()
-            << std::endl;
+        spdlog::error("Unable to write config file {}", cfgOutFilename);
+        spdlog::debug("Error writing config file: {}", error.what());
     }
 
     // shape parameters
@@ -2082,7 +2113,7 @@ static int run_with_config(const po::variables_map& vm) {
     delete [] subList2;
     delete [] subList3;
 
-    //cout << "done.\n";
+    // spdlog::info("done.");
 
     // correct boundary list to be all boundary values
     vtkIdType dnum = boundaryList->GetNumberOfIds();
@@ -2236,14 +2267,14 @@ static int run_with_config(const po::variables_map& vm) {
 
     double breastVol = (double)breastVoxVol*pow(imgRes,3.0);
 
-    //cout << "Breast volume: " << breastVol/1000 << " cc ("<< breastVoxVol << " voxels).\n";
+    // spdlog::info("Breast volume: {} cc ({} voxels)", breastVol/1000, breastVoxVol);
 
     /***********************
     Nipple
     **********************/
 
     // create nipple structure
-    //cout << "Creating nipple structure...";
+    // spdlog::info("Creating nipple structure...");
 
     // squared radius
     double nippleRad2 = nippleRad*nippleRad;
@@ -2469,9 +2500,9 @@ static int run_with_config(const po::variables_map& vm) {
     double pcoords[3]; // parametric coordinates
     breast->ComputeStructuredCoordinates(seedBase,coords,pcoords);
     unsigned char* base = static_cast<unsigned char*>(breast->GetScalarPointer(coords));
-    if(base[0] != innerVal){
+    if (base[0] != innerVal) {
         // outside breast error
-        cout << "Error, breast compartment seed base outside breast volume\n";
+        spdlog::critical("Breast compartment seed base outside breast volume");
         return EXIT_FAILURE;
     }
 
@@ -2676,7 +2707,7 @@ static int run_with_config(const po::variables_map& vm) {
             // finished calculating axes
         } else {
             // missed the breast surface - error
-            cout << "Error, missed breast surface when shooting rays\n";
+            spdlog::critical("Missed breast surface when shooting rays");
             return EXIT_FAILURE;
         }
     }
@@ -3121,9 +3152,8 @@ static int run_with_config(const po::variables_map& vm) {
     }
     fatVol = voxelVol*fatVoxels;
 
-    //cout << "done.\n";
-    //cout << "Initial Voronoi fat fraction = " << fatVol/(glandVol+fatVol) << "\n";
-
+    // spdlog::info("done");
+    // spdlog::info("Initial Voronoi fat fraction = {}", fatVol/(glandVol+fatVol));
 
     targetGlandVol = (glandVol+fatVol)*(1-targetFatFrac);
 
@@ -3384,9 +3414,9 @@ static int run_with_config(const po::variables_map& vm) {
             }
             dist += 5*step;
 
-            if(!inCompartment){
-    cout << "Error, could not find starting duct position\n";
-    //	return EXIT_FAILURE;
+            if (!inCompartment) {
+                spdlog::error("Could not find starting duct position");
+                //	return EXIT_FAILURE;
             }
 
             // create connector from nipple to start position
@@ -3521,9 +3551,9 @@ static int run_with_config(const po::variables_map& vm) {
     targetFatFrac = vm["base.targetFatFrac"].as<double>();	// desired fat fraction of breast
 
     // potentially adjust target fat frac
-    if(targetFatFrac<currentFatFrac){
+    if (targetFatFrac < currentFatFrac) {
         targetFatFrac = currentFatFrac + (1-currentFatFrac)*0.25;
-        cout << "Adjusting target fat fraction before lobulation to " << targetFatFrac << "\n";
+        spdlog::info("Adjusting target fat fraction before lobulation to {}", targetFatFrac);
     }
 
     /**********************
@@ -4176,9 +4206,9 @@ static int run_with_config(const po::variables_map& vm) {
         }
         // update fatfrac
         currentFatFrac = (double)(fatVoxels)/(double)(fatVoxels+glandVoxels);
-        //if(!(numInnerFatLobuleTry % 10)){
-        //  cout << "Finished inner lobule " << numInnerFatLobuleTry+1 << ", fat fraction = " << currentFatFrac << "\n";
-        //}
+        // if (numInnerFatLobuleTry % 10 == 0) {
+        //     spdlog::info("Finished inner lobule {}, fat fraction = {}", numInnerFatLobuleTry + 1, currentFatFrac);
+        // }
         glandVol = glandVoxels*pow(imgRes,3.0);
         numInnerFatLobuleTry += 1;
     }
@@ -4379,7 +4409,7 @@ static int run_with_config(const po::variables_map& vm) {
         }
         // update ligamented frac
         ligamentedFrac = static_cast<double>(ligedVoxels)/static_cast<double>(fatVoxels+glandVoxels);
-        //cout << "Lig " << fltry << ", Ligamented fraction = " << ligamentedFrac << "\n";
+        spdlog::info("Lig {}, Ligamented fraction = ", fltry, ligamentedFrac);
     }
 
     // convert remaining ufat and ugland
@@ -4796,11 +4826,10 @@ static int run_with_config(const po::variables_map& vm) {
         hdrFile << "ElementDataFile = " << outrawFilename.filename().native() << std::endl;
 
         hdrFile.close();
+        spdlog::debug("outhdrFilename written to {}", outhdrFilename);
     } catch (const std::exception& error) {
-        cerr << "Warning: "
-            << "Unable to write HDR file " << outhdrFilename << ": "
-            << error.what()
-            << std::endl;
+        spdlog::error("Unable to write HDR file {}", outhdrFilename);
+        spdlog::debug("Error writing HDR file {}", error.what());
     }
 
     // save gzipped raw
@@ -4819,11 +4848,10 @@ static int run_with_config(const po::variables_map& vm) {
         io::close(in);
         io::close(gzf);
 
+        spdlog::debug("outgzFilename written to {}", outgzFilename);
     } catch (const std::exception& error) {
-        cerr << "Warning: "
-            << "Unable to write gzip file " << outgzFilename.native() << ": "
-            << error.what()
-            << std::endl;
+        spdlog::error("Unable to write gzip file {}", outgzFilename);
+        spdlog::debug("Error writing gzip file {}", error.what());
     }
 
     return EXIT_SUCCESS;
@@ -4837,7 +4865,7 @@ int main(int argc, const char *argv[]) {
         return run_with_config(vm);
 
     } catch (const std::exception& error) {
-        std::cerr << "Error: " << error.what() << std::endl;
+        spdlog::critical("Unexpected error: {}", error.what());
         return EXIT_FAILURE;
     }
 }

@@ -20,6 +20,8 @@
 
 #include <omp.h>
 
+#include <spdlog/spdlog.h>
+
 #include <vtkMath.h>
 #include <vtkVector.h>
 
@@ -139,14 +141,14 @@ ductBr::ductBr(double* spos, double* sdir, double r, ductTree *owner){
     }
 
     // generate more segments until proper length
-    while(curLength < length && !failSeg && !edgeSeg){
+    while (curLength < length && !failSeg && !edgeSeg) {
         lastSeg->nextSeg = new ductSeg(lastSeg);
         // the lastSeg in parenthesis is used to fill variables including prevSeg ptr
         lastSeg = lastSeg->nextSeg;
         curLength += lastSeg->length;
-        if(lastSeg->length == 0.0){
+        if (lastSeg->length == 0.0) {
             failSeg = true;
-            //std::cout << "Zero length segment created\n";
+            // spdlog::info("Zero length segment created");
         }
         // check if at ROI boundary
         thePos = lastSeg->endPos;
@@ -156,9 +158,9 @@ ductBr::ductBr(double* spos, double* sdir, double r, ductTree *owner){
     for(int c=-1; c<=1; c++){
         unsigned char* p =
             static_cast<unsigned char*>(myTree->breast->GetScalarPointer(invox[0]+a,invox[1]+b,invox[2]+c));
-        if(p[0] != myTree->compartmentId && p[0] != myTree->tissue->duct){
+        if (p[0] != myTree->compartmentId && p[0] != myTree->tissue->duct) {
             edgeSeg = true;
-            std::cout << "A segment hit the boundary\n";
+            spdlog::info("A segment hit the boundary");
         }
     }
             }
@@ -177,22 +179,22 @@ ductBr::ductBr(double* spos, double* sdir, double r, ductTree *owner){
     // set number of children and generate them
     nChild = setChild();
 
-    if(failSeg){
+    if (failSeg) {
         nChild = 0;
-        std::cout << "Segment generation failure for branch" << id << std::endl;
+        spdlog::warn("Segment generation failure for branch {}", id);
     }
 
-    if(edgeSeg){
-        std::cout << "ROI edge collision for branch " << id << std::endl;
+    if (edgeSeg) {
+        spdlog::warn("ROI edge collision for branch {}", id);
     }
 
-    if (nChild == 0){
+    if (nChild == 0) {
         firstChild = nullptr;
         secondChild = nullptr;
         // TDLU creation
 
         // check branch length is long enough
-        if(length >= myTree->opt["TDLU.minLength"].as<double>()){
+        if (length >= myTree->opt["TDLU.minLength"].as<double>()) {
             // long enough
 
             // pick sizes
@@ -201,8 +203,8 @@ ductBr::ductBr(double* spos, double* sdir, double r, ductTree *owner){
             double minWid = myTree->opt["TDLU.minWidth"].as<double>();
             double maxWid = myTree->opt["TDLU.maxWidth"].as<double>();
 
-            if(length < maxLen){
-    maxLen = length;
+            if (length < maxLen) {
+                maxLen = length;
             }
 
             double len = minLen + (maxLen-minLen)*myTree->u01();
@@ -393,16 +395,16 @@ ductBr::ductBr(ductBr* par, unsigned int lev, unsigned int g, double r, double t
     // set number of children and generate them
     nChild = setChild();
 
-    if(failSeg){
+    if (failSeg) {
         nChild = 0;
-        //std::cout << "Segment generation failure for branch" << id << std::endl;
+        // spdlog::warn("Segment generation failure for branch {}", id);
     }
 
-    if(edgeSeg){
+    if (edgeSeg) {
         nChild = 0;
     }
 
-    if (nChild == 0){
+    if (nChild == 0) {
         firstChild = nullptr;
         secondChild = nullptr;
 
@@ -611,25 +613,25 @@ ductBr::ductBr(ductBr* par, ductBr* par2, unsigned int lev, unsigned int g, doub
     // set number of children and generate them
     nChild = setChild();
 
-    if(failSeg){
+    if (failSeg) {
         nChild = 0;
-        //std::cout << "Segment generation failure for branch" << id << std::endl;
+        // spdlog::warn("Segment generation failure for branch {}", id);
     }
 
-    if(edgeSeg){
+    if (edgeSeg) {
         nChild = 0;
     }
 
-    if (nChild == 0){
+    if (nChild == 0) {
         firstChild = nullptr;
         secondChild = nullptr;
 
         // TDLU creation
 
         // check branch length is long enough
-        if(length >= myTree->opt["TDLU.minLength"].as<double>()){
+        if (length >= myTree->opt["TDLU.minLength"].as<double>()) {
             // long enough
-            //std::cout << "Adding TDLU" << std::endl;
+            // spdlog::indo("Adding TDLU");
 
             // pick sizes
             double minLen = myTree->opt["TDLU.minLength"].as<double>();
@@ -637,8 +639,8 @@ ductBr::ductBr(ductBr* par, ductBr* par2, unsigned int lev, unsigned int g, doub
             double minWid = myTree->opt["TDLU.minWidth"].as<double>();
             double maxWid = myTree->opt["TDLU.maxWidth"].as<double>();
 
-            if(length < maxLen){
-    maxLen = length;
+            if (length < maxLen) {
+                maxLen = length;
             }
 
             double len = minLen + (maxLen-minLen)*myTree->u01();

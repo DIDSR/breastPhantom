@@ -20,6 +20,8 @@
 
 #include <omp.h>
 
+#include <spdlog/spdlog.h>
+
 #include <vtkMath.h>
 
 
@@ -236,16 +238,16 @@ veinBr::veinBr(double* spos, double* sdir, double r, veinTree *owner){
     // set number of children and generate them
     nChild = setChild();
 
-    if(failSeg){
+    if (failSeg) {
         nChild = 0;
     }
 
-    if(edgeSeg){
+    if (edgeSeg) {
         nChild = 0;
-        std::cout << "ROI edge collision for branch " << id << std::endl;
+        spdlog::info("ROI edge collision for branch {}", id);
     }
 
-    if (nChild == 0){
+    if (nChild == 0) {
         firstChild = nullptr;
         secondChild = nullptr;
     } else {
