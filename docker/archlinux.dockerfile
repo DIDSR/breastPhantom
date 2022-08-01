@@ -5,7 +5,7 @@ RUN <<EOT
     pacman -Suy --noconfirm
 
     # build tools
-    pacman -S --noconfirm gcc git wget cmake
+    pacman -S --noconfirm gcc git wget cmake make
     # dependencies
     pacman -S --noconfirm vtk fmt openmp openmpi lapack boost
 EOT

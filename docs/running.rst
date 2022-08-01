@@ -1,3 +1,5 @@
+.. _running:
+
 Running the Software
 ====================
 
@@ -35,4 +37,4 @@ All phantom output files will be placed in the directory specified in the config
 Randomization
 -------------
 
-The phantom generation process is stochastic and relies upon a random number generator seed.  This seed can be specified in the configuration file using the parameter *seed*, though the default behavior is to randomly generate a seed at runtime by reading from ``/dev/urandom``. In this mode each time the breast phantom generation code is run with a fixed configuration file, a different random breast will be generated that is consistent with the configuration parameters. This allows for the generation of random breast textures at fixed glandularity, for example.
+The phantom generation process is stochastic and relies upon a random number generator seed.  This seed can be specified in the configuration file using the parameter *seed*, though the default behavior is to randomly generate a seed at runtime by calling `getrandom <https://manpages.ubuntu.com/manpages/jammy/en/man2/getrandom.2.html>`_. In this mode each time the breast phantom generation code is run with a fixed configuration file, a different random breast will be generated that is consistent with the configuration parameters. This allows for the generation of random breast textures at fixed glandularity, for example.
