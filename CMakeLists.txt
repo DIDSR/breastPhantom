@@ -4,8 +4,19 @@ project(breastPhantom
     LANGUAGES CXX
 )
 
+# OpenMP
+find_package(OpenMP REQUIRED)
+
+# Boost libs
+find_package(Boost 1.67
+    REQUIRED
+    COMPONENTS
+        iostreams
+        program_options
+)
+
 # VTK dependencies
-find_package(VTK 9.0
+find_package(VTK 9
     COMPONENTS
         CommonComputationalGeometry
         CommonCore
@@ -17,13 +28,26 @@ find_package(VTK 9.0
         IOXML
     QUIET
 )
+# for VTK 9, pull only the required libraries
+if (VTK_FOUND)
+    set(VTK_LIBRARIES
+        VTK::CommonComputationalGeometry
+        VTK::CommonCore
+        VTK::CommonDataModel
+        VTK::CommonMisc
+        VTK::FiltersCore
+        VTK::FiltersGeneral
+        VTK::ImagingHybrid
+        VTK::IOXML
+    )
 # for older VTK versions, pull all dependencies
-if (NOT VTK_FOUND)
+else()
     find_package(VTK REQUIRED)
     include(${VTK_USE_FILE})
-endif()
-if (VTK_VERSION VERSION_LESS 6.0)
-    message(FATAL_ERROR "Minimum supported version for VTK is 6")
+
+    if (VTK_VERSION VERSION_LESS 6.0)
+        message(FATAL_ERROR "Minimum supported version for VTK is 6")
+    endif()
 endif()
 
 # OpenMP
@@ -65,5 +89,8 @@ target_link_libraries(${PROJECT_NAME}
         boost_program_options boost_iostreams
 )
 if (NOT VTK_MAJOR_VERSION LESS 9)
-    vtk_module_autoinit(TARGETS ${PROJECT_NAME} MODULES ${VTK_LIBRARIES})
+    vtk_module_autoinit(
+        TARGETS ${PROJECT_NAME}
+        MODULES ${VTK_LIBRARIES}
+    )
 endif()

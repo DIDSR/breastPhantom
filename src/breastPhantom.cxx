@@ -418,6 +418,11 @@ static unsigned generate_random_seed(void) {
 }
 
 
+static inline std::string str(const auto& stream) {
+    return static_cast<const std::stringstream&>(stream).str();
+}
+
+
 [[gnu::hot]]
 static int run_with_config(po::variables_map& vm) {
     const double pi = vtkMath::Pi();
@@ -500,7 +505,7 @@ static int run_with_config(po::variables_map& vm) {
     }
 
     // basename for output files
-    const auto outputBaseName = (std::stringstream() << "p_" << randSeed).str();
+    const auto outputBaseName = str(std::stringstream() << "p_" << randSeed);
     // config copy
     const auto cfgOutFilename = outputDir.path() / (outputBaseName + ".cfg");
     // VTI files
