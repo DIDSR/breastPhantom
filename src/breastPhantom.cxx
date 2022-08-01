@@ -22,6 +22,8 @@
 #include <span>
 #include <string>
 #include <system_error>
+#include <utility>
+
 #include <cerrno>
 #include <cmath>
 #include <cstdint>
@@ -147,7 +149,7 @@ static po::variables_map parse_config(const std::span<const char *>& args) {
         ("base.areolaRad",po::value<double>()->default_value(8.0),"areola radius (mm)")
         ("base.leftBreast",po::value<bool>()->default_value(true),"left side breast (boolean)")
         ("base.targetFatFrac",po::value<double>()->default_value(0.75),"desired fraction of breast to be fat")
-        ("base.seed",po::value<unsigned int>(),"random number generator seed")
+        ("base.seed",po::value<unsigned>(),"random number generator seed")
         ;
 
     po::options_description shapeOpt("breast shape options");
@@ -187,10 +189,10 @@ static po::variables_map parse_config(const std::span<const char *>& args) {
 
     po::options_description compartOpt("breast compartment options");
     compartOpt.add_options()
-        ("compartments.num",po::value<int>()->default_value(8),"number of breast compartments")
+        ("compartments.num",po::value<unsigned>()->default_value(8),"number of breast compartments")
         ("compartments.seedBaseDist",po::value<double>()->default_value(12.5),"distance along nipple line of compartment seed base (mm)")
         ("compartments.backFatBufferFrac",po::value<double>()->default_value(0.2),"fraction of phantom in nipple direction forced to be fat")
-        ("compartments.numBackSeeds",po::value<int>()->default_value(100),"number of backplane seed points")
+        ("compartments.numBackSeeds",po::value<unsigned>()->default_value(100),"number of backplane seed points")
         ("compartments.angularJitter",po::value<double>()->default_value(0.125),"maximum seed jitter (fraction of subtended angle)")
         ("compartments.zJitter",po::value<double>()->default_value(5.0),"maximum seed jitter in nipple direction (mm)")
         ("compartments.maxFracRadialDist",po::value<double>()->default_value(0.5),"maximum radial distance from base seed as a fraction of distance to breast surface")
@@ -228,7 +230,7 @@ static po::variables_map parse_config(const std::span<const char *>& args) {
         ("perlin.frequency",po::value<double>()->default_value(0.5),"starting frequency")
         ("perlin.lacunarity",po::value<double>()->default_value(1.5),"octave frequency multiplier")
         ("perlin.persistence",po::value<double>()->default_value(0.2),"octave signal decay")
-        ("perlin.numOctaves",po::value<int>()->default_value(6),"number of frequency octaves")
+        ("perlin.numOctaves",po::value<unsigned>()->default_value(6),"number of frequency octaves")
         ("perlin.xNoiseGen",po::value<int>()->default_value(683),"x direction noise generation seed")
         ("perlin.yNoiseGen",po::value<int>()->default_value(4933),"y direction noise generation seed")
         ("perlin.zNoiseGen",po::value<int>()->default_value(23),"z direction noise generation seed")
@@ -305,14 +307,14 @@ static po::variables_map parse_config(const std::span<const char *>& args) {
         ("fat.minLobuleGap",po::value<double>()->default_value(0.2),"minimum ligament separation between lobules")
         ("fat.maxCoeffStr",po::value<double>()->default_value(0.08),"maximum of absolute value of Fourier coefficient as fraction of main radius")
         ("fat.minCoeffStr",po::value<double>()->default_value(0.02),"minimum of absolute value of Fourier coefficient as fraction of main radius")
-        ("fat.maxLobuleTry",po::value<int>()->default_value(600),"maximum number of trial lobules")
+        ("fat.maxLobuleTry",po::value<unsigned>()->default_value(600),"maximum number of trial lobules")
         ;
 
     po::options_description ligOpt("Ligament options");
     ligOpt.add_options()
         ("lig.thickness",po::value<double>()->default_value(0.12),"ligament thickness (mm)")
         ("lig.targetFrac",po::value<double>()->default_value(0.85),"ligamented volume stopping fraction")
-        ("lig.maxTry",po::value<int>()->default_value(15000),"maximum number of ligaments")
+        ("lig.maxTry",po::value<unsigned>()->default_value(15000),"maximum number of ligaments")
         ("lig.minAxis",po::value<double>()->default_value(15.0),"min lobule axis length (mm)")
         ("lig.maxAxis",po::value<double>()->default_value(20.0),"max lobule axis length (mm)")
         ("lig.minAxialRatio",po::value<double>()->default_value(0.3),"min axial ratio")
@@ -322,18 +324,18 @@ static po::variables_map parse_config(const std::span<const char *>& args) {
         ("lig.scale",po::value<double>()->default_value(0.007),"perlin frequency scaling")
         ("lig.lacunarity",po::value<double>()->default_value(1.8),"octave frequency multiplier")
         ("lig.persistence",po::value<double>()->default_value(0.6),"octave signal decay")
-        ("lig.numOctaves",po::value<int>()->default_value(6),"number of frequency octaves")
+        ("lig.numOctaves",po::value<unsigned>()->default_value(6),"number of frequency octaves")
         ;
 
     po::options_description ductTreeOpt("Duct tree options");
     ductTreeOpt.add_options()
-        ("ductTree.maxBranch",po::value<uint>()->default_value(100),"Maximum number of branches")
-        ("ductTree.maxGen",po::value<uint>()->default_value(15),"Maximum generation")
+        ("ductTree.maxBranch",po::value<unsigned>()->default_value(100),"Maximum number of branches")
+        ("ductTree.maxGen",po::value<unsigned>()->default_value(15),"Maximum generation")
         ("ductTree.baseLength",po::value<double>()->default_value(7.6),"main branch length (mm)")
         ("ductTree.initRad",po::value<double>()->default_value(2.0),"tree start radius")
-        ("ductTree.nFillX",po::value<uint>()->default_value(100),"number x voxels for density map")
-        ("ductTree.nFillY",po::value<uint>()->default_value(100),"number y voxels for density map")
-        ("ductTree.nFillZ",po::value<uint>()->default_value(100),"number z voxels for density map")
+        ("ductTree.nFillX",po::value<unsigned>()->default_value(100),"number x voxels for density map")
+        ("ductTree.nFillY",po::value<unsigned>()->default_value(100),"number y voxels for density map")
+        ("ductTree.nFillZ",po::value<unsigned>()->default_value(100),"number z voxels for density map")
         ;
 
     po::options_description ductBrOpt("Duct Branch options");
@@ -356,9 +358,9 @@ static po::variables_map parse_config(const std::span<const char *>& args) {
         ("ductSeg.maxEndRad",po::value<double>()->default_value(1.05),"max end radius as fraction of start radius")
         ("ductSeg.angleWt",po::value<double>()->default_value(1.0),"cost function preferential angle weighting")
         ("ductSeg.densityWt",po::value<double>()->default_value(5e-5),"cost function density weighting")
-        ("ductSeg.numTry",po::value<uint>()->default_value(10),"number of trial segments")
-        ("ductSeg.maxTry",po::value<uint>()->default_value(100),"max number of trial segments before reducing length")
-        ("ductSeg.absMaxTry",po::value<uint>()->default_value(10000),"max number of trial segments before completely giving up")
+        ("ductSeg.numTry",po::value<unsigned>()->default_value(10),"number of trial segments")
+        ("ductSeg.maxTry",po::value<unsigned>()->default_value(100),"max number of trial segments before reducing length")
+        ("ductSeg.absMaxTry",po::value<unsigned>()->default_value(10000),"max number of trial segments before completely giving up")
         // check if this needs to be changed
         ("ductSeg.roiStep",po::value<double>()->default_value(0.1),"step size for checking segment validity")
         ("ductSeg.segFrac",po::value<double>()->default_value(0.25),"fraction of branch length per segment")
@@ -366,13 +368,13 @@ static po::variables_map parse_config(const std::span<const char *>& args) {
 
     po::options_description vesselTreeOpt("Vessel tree options");
     vesselTreeOpt.add_options()
-        ("vesselTree.maxBranch",po::value<uint>()->default_value(100),"Maximum number of branches")
-        ("vesselTree.maxGen",po::value<uint>()->default_value(15),"Maximum generation")
+        ("vesselTree.maxBranch",po::value<unsigned>()->default_value(100),"Maximum number of branches")
+        ("vesselTree.maxGen",po::value<unsigned>()->default_value(15),"Maximum generation")
         ("vesselTree.baseLength",po::value<double>()->default_value(12.0),"main branch length (mm)")
         ("vesselTree.initRad",po::value<double>()->default_value(2.0),"tree start radius")
-        ("vesselTree.nFillX",po::value<uint>()->default_value(100),"number x voxels for density map")
-        ("vesselTree.nFillY",po::value<uint>()->default_value(100),"number y voxels for density map")
-        ("vesselTree.nFillZ",po::value<uint>()->default_value(100),"number z voxels for density map")
+        ("vesselTree.nFillX",po::value<unsigned>()->default_value(100),"number x voxels for density map")
+        ("vesselTree.nFillY",po::value<unsigned>()->default_value(100),"number y voxels for density map")
+        ("vesselTree.nFillZ",po::value<unsigned>()->default_value(100),"number z voxels for density map")
         ;
 
     po::options_description vesselBrOpt("Vessel branch options");
@@ -397,9 +399,9 @@ static po::variables_map parse_config(const std::span<const char *>& args) {
         ("vesselSeg.angleWt",po::value<double>()->default_value(1.0),"cost function preferential angle weighting")
         ("vesselSeg.densityWt",po::value<double>()->default_value(5e-5),"cost function density weighting")
         ("vesselSeg.dirWt",po::value<double>()->default_value(5e-5),"cost function direction weighting")
-        ("vesselSeg.numTry",po::value<uint>()->default_value(10),"number of trial segments")
-        ("vesselSeg.maxTry",po::value<uint>()->default_value(100),"max number of trial segments before reducing length")
-        ("vesselSeg.absMaxTry",po::value<uint>()->default_value(10000),"max number of trial segments before completely giving up")
+        ("vesselSeg.numTry",po::value<unsigned>()->default_value(10),"number of trial segments")
+        ("vesselSeg.maxTry",po::value<unsigned>()->default_value(100),"max number of trial segments before reducing length")
+        ("vesselSeg.absMaxTry",po::value<unsigned>()->default_value(10000),"max number of trial segments before completely giving up")
         // check if this needs to be changed
         ("vesselSeg.roiStep",po::value<double>()->default_value(0.1),"step size for checking segment validity")
         ("vesselSeg.segFrac",po::value<double>()->default_value(0.25),"fraction of branch length per segment")
@@ -647,9 +649,7 @@ static int run_with_config(const po::variables_map& vm) {
     const double h1 = vm["shape.turnTopH1"].as<double>();
 
     // start a random number generator
-    vtkSmartPointer<vtkMinimalStandardRandomSequence> rgen =
-        vtkSmartPointer<vtkMinimalStandardRandomSequence>::New();
-
+    auto rgen = vtkSmartPointer<vtkMinimalStandardRandomSequence>::New();
     rgen->SetSeed((int) randSeed);
 
     /***********************
@@ -661,62 +661,50 @@ static int run_with_config(const po::variables_map& vm) {
     double uval,vval,xval,yval,zval;
     vtkIdType myId;
 
-    vtkSmartPointer<vtkPoints> brightFront =
-        vtkSmartPointer<vtkPoints>::New();
-    vtkSmartPointer<vtkPoints> brightBack =
-        vtkSmartPointer<vtkPoints>::New();
-    vtkSmartPointer<vtkPoints> brightRing =
-        vtkSmartPointer<vtkPoints>::New();
+    auto brightFront = vtkSmartPointer<vtkPoints>::New();
+    auto brightBack = vtkSmartPointer<vtkPoints>::New();
+    auto brightRing = vtkSmartPointer<vtkPoints>::New();
 
-    vtkSmartPointer<vtkPoints> trightFront =
-        vtkSmartPointer<vtkPoints>::New();
-    vtkSmartPointer<vtkPoints> trightBack =
-        vtkSmartPointer<vtkPoints>::New();
-    vtkSmartPointer<vtkPoints> trightRing =
-        vtkSmartPointer<vtkPoints>::New();
+    auto trightFront = vtkSmartPointer<vtkPoints>::New();
+    auto trightBack = vtkSmartPointer<vtkPoints>::New();
+    auto trightRing = vtkSmartPointer<vtkPoints>::New();
 
-    vtkSmartPointer<vtkPoints> tleftFront =
-        vtkSmartPointer<vtkPoints>::New();
-    vtkSmartPointer<vtkPoints> tleftBack =
-        vtkSmartPointer<vtkPoints>::New();
-    vtkSmartPointer<vtkPoints> tleftRing =
-        vtkSmartPointer<vtkPoints>::New();
+    auto tleftFront = vtkSmartPointer<vtkPoints>::New();
+    auto tleftBack = vtkSmartPointer<vtkPoints>::New();
+    auto tleftRing = vtkSmartPointer<vtkPoints>::New();
 
-    vtkSmartPointer<vtkPoints> bleftFront =
-        vtkSmartPointer<vtkPoints>::New();
-    vtkSmartPointer<vtkPoints> bleftBack =
-        vtkSmartPointer<vtkPoints>::New();
-    vtkSmartPointer<vtkPoints> bleftRing =
-        vtkSmartPointer<vtkPoints>::New();
+    auto bleftFront = vtkSmartPointer<vtkPoints>::New();
+    auto bleftBack = vtkSmartPointer<vtkPoints>::New();
+    auto bleftRing = vtkSmartPointer<vtkPoints>::New();
 
     vtkIdType centerPt;
 
-#pragma omp sections private(uval,vval,xval,yval,zval,myId)
+    #pragma omp sections private(uval,vval,xval,yval,zval,myId)
     {
-#pragma omp section
+        #pragma omp section
         {
             // bottom right breast
             vval = -1.0*pi + vres;
             while(vval <= -0.5*pi){
-    uval = 0.0;
-    // ring is uval == 0
-    xval = 0.0;
-    yval = pow(a2r,eps1)*pow(sin(vval),eps2);
-    zval = pow(a1b,eps1)*pow(cos(vval),eps2);
-    myId = brightRing->InsertNextPoint(xval,yval,zval);
-    uval += ures;
+                uval = 0.0;
+                // ring is uval == 0
+                xval = 0.0;
+                yval = pow(a2r,eps1)*pow(sin(vval),eps2);
+                zval = pow(a1b,eps1)*pow(cos(vval),eps2);
+                myId = brightRing->InsertNextPoint(xval,yval,zval);
+                uval += ures;
 
-    while(uval <= 0.5*pi){
-        xval = pow(a3*sin(uval),eps1);
-        yval = pow(a2r*cos(uval),eps1)*pow(sin(vval),eps2);
-        zval = pow(a1b*cos(uval),eps1)*pow(cos(vval),eps2);
-        // add point to front
-        myId = brightFront->InsertNextPoint(xval,yval,zval);
-        // add backplane point
-        myId = brightBack->InsertNextPoint(0.0,yval,zval);
-        uval += ures;
-    }
-    vval += vres;
+                while(uval <= 0.5*pi){
+                    xval = pow(a3*sin(uval),eps1);
+                    yval = pow(a2r*cos(uval),eps1)*pow(sin(vval),eps2);
+                    zval = pow(a1b*cos(uval),eps1)*pow(cos(vval),eps2);
+                    // add point to front
+                    myId = brightFront->InsertNextPoint(xval,yval,zval);
+                    // add backplane point
+                    myId = brightBack->InsertNextPoint(0.0,yval,zval);
+                    uval += ures;
+                }
+                vval += vres;
             }
 
             // add center point to bottom-right breast front and back and skip
@@ -724,84 +712,84 @@ static int run_with_config(const po::variables_map& vm) {
             centerPt = brightBack->InsertNextPoint(0.0,0.0,0.0);
         }
 
-#pragma omp section
+        #pragma omp section
         {
             // top right breast
 
             vval = -0.5*pi + vres;
-            while(vval <= 0.0){
-    uval = 0.0;
-    xval = 0.0;
-    yval = pow(a2r,eps1)*pow(sin(vval),eps2);
-    zval = pow(a1t,eps1)*pow(cos(vval),eps2);
-    myId = trightRing->InsertNextPoint(xval,yval,zval);
-    uval += ures;
+            while (vval <= 0.0) {
+                uval = 0.0;
+                xval = 0.0;
+                yval = pow(a2r,eps1)*pow(sin(vval),eps2);
+                zval = pow(a1t,eps1)*pow(cos(vval),eps2);
+                myId = trightRing->InsertNextPoint(xval,yval,zval);
+                uval += ures;
 
-    while(uval <= 0.5*pi){
-        xval = pow(a3*sin(uval),eps1);
-        yval = pow(a2r*cos(uval),eps1)*pow(sin(vval),eps2);
-        zval = pow(a1t*cos(uval),eps1)*pow(cos(vval),eps2);
-        // add the point
-        myId = trightFront->InsertNextPoint(xval,yval,zval);
-        // add backplane point
-        myId = trightBack->InsertNextPoint(0.0,yval,zval);
-        uval += ures;
-    }
-    vval += vres;
+                while(uval <= 0.5*pi){
+                    xval = pow(a3*sin(uval),eps1);
+                    yval = pow(a2r*cos(uval),eps1)*pow(sin(vval),eps2);
+                    zval = pow(a1t*cos(uval),eps1)*pow(cos(vval),eps2);
+                    // add the point
+                    myId = trightFront->InsertNextPoint(xval,yval,zval);
+                    // add backplane point
+                    myId = trightBack->InsertNextPoint(0.0,yval,zval);
+                    uval += ures;
+                }
+                vval += vres;
             }
         }
 
-#pragma omp section
+        #pragma omp section
         {
             // top left breast
 
             vval = 0.0 + vres;
             while(vval <= 0.5*pi){
-    uval = 0.0;
-    xval = 0.0;
-    yval = pow(a2l,eps1)*pow(sin(vval),eps2);
-    zval = pow(a1t,eps1)*pow(cos(vval),eps2);
-    myId = tleftRing->InsertNextPoint(xval,yval,zval);
-    uval += ures;
+                uval = 0.0;
+                xval = 0.0;
+                yval = pow(a2l,eps1)*pow(sin(vval),eps2);
+                zval = pow(a1t,eps1)*pow(cos(vval),eps2);
+                myId = tleftRing->InsertNextPoint(xval,yval,zval);
+                uval += ures;
 
-    while(uval <= 0.5*pi){
-        xval = pow(a3*sin(uval),eps1);
-        yval = pow(a2l*cos(uval),eps1)*pow(sin(vval),eps2);
-        zval = pow(a1t*cos(uval),eps1)*pow(cos(vval),eps2);
-        // add the point
-        myId = tleftFront->InsertNextPoint(xval,yval,zval);
-        // add backplane point
-        myId = tleftBack->InsertNextPoint(0.0,yval,zval);
-        uval += ures;
-    }
-    vval += vres;
+                while(uval <= 0.5*pi){
+                    xval = pow(a3*sin(uval),eps1);
+                    yval = pow(a2l*cos(uval),eps1)*pow(sin(vval),eps2);
+                    zval = pow(a1t*cos(uval),eps1)*pow(cos(vval),eps2);
+                    // add the point
+                    myId = tleftFront->InsertNextPoint(xval,yval,zval);
+                    // add backplane point
+                    myId = tleftBack->InsertNextPoint(0.0,yval,zval);
+                    uval += ures;
+                }
+                vval += vres;
             }
         }
 
-#pragma omp section
+        #pragma omp section
         {
             // bottom left breast
 
             vval = 0.5*pi + vres;
             while(vval <= pi){
-    uval = 0.0;
-    xval = 0.0;
-    yval = pow(a2l,eps1)*pow(sin(vval),eps2);
-    zval = pow(a1b,eps1)*pow(cos(vval),eps2);
-    myId = bleftRing->InsertNextPoint(xval,yval,zval);
-    uval += ures;
+                uval = 0.0;
+                xval = 0.0;
+                yval = pow(a2l,eps1)*pow(sin(vval),eps2);
+                zval = pow(a1b,eps1)*pow(cos(vval),eps2);
+                myId = bleftRing->InsertNextPoint(xval,yval,zval);
+                uval += ures;
 
-    while(uval <= 0.5*pi){
-        xval = pow(a3*sin(uval),eps1);
-        yval = pow(a2l*cos(uval),eps1)*pow(sin(vval),eps2);
-        zval = pow(a1b*cos(uval),eps1)*pow(cos(vval),eps2);
-        // add the point
-        myId = bleftFront->InsertNextPoint(xval,yval,zval);
-        // add backplane point
-        myId = bleftBack->InsertNextPoint(0.0,yval,zval);
-        uval += ures;
-    }
-    vval += vres;
+                while(uval <= 0.5*pi){
+                    xval = pow(a3*sin(uval),eps1);
+                    yval = pow(a2l*cos(uval),eps1)*pow(sin(vval),eps2);
+                    zval = pow(a1b*cos(uval),eps1)*pow(cos(vval),eps2);
+                    // add the point
+                    myId = bleftFront->InsertNextPoint(xval,yval,zval);
+                    // add backplane point
+                    myId = bleftBack->InsertNextPoint(0.0,yval,zval);
+                    uval += ures;
+                }
+                vval += vres;
             }
         }
 
@@ -811,7 +799,7 @@ static int run_with_config(const po::variables_map& vm) {
     // do deformations
 
     // top shape
-    if(doTopShape){
+    if (doTopShape) {
         vtkIdType npts = trightFront->GetNumberOfPoints();
         uval = ures; // need original u value
         for(int i=0; i<npts; i++){
@@ -830,7 +818,7 @@ static int run_with_config(const po::variables_map& vm) {
 
             uval += ures;
             if(uval > 0.5*pi){
-    uval = ures;
+                uval = ures;
             }
         }
 
@@ -861,7 +849,7 @@ static int run_with_config(const po::variables_map& vm) {
 
             uval += ures;
             if(uval > 0.5*pi){
-    uval = ures;
+                uval = ures;
             }
         }
 
@@ -881,150 +869,132 @@ static int run_with_config(const po::variables_map& vm) {
             trightFront->ComputeBounds();
             double bound[6];
             trightFront->GetBounds(bound);
-            double scale;
-            if(fabs(bound[2]) > fabs(bound[3])){
-    scale = fabs(bound[2]);
-            } else {
-    scale = fabs(bound[3]);
-            }
+            double scale = std::max(fabs(bound[2]), fabs(bound[3]));
             vtkIdType npts = trightFront->GetNumberOfPoints();
-#pragma omp parallel for
+
+            #pragma omp parallel for
             for(int i=0; i<npts; i++){
-    double pval[3];
-    // front
-    trightFront->GetPoint(i,pval);
-    double yv = fabs(pval[1]/scale);
-    pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
-                 Cf*yv + Df);
-    trightFront->SetPoint(i,pval);
-    // back
-    trightBack->GetPoint(i,pval);
-    yv = fabs(pval[1]/scale);
-    pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
-                 Cf*yv + Df);
-    trightBack->SetPoint(i,pval);
+                double pval[3];
+                // front
+                trightFront->GetPoint(i,pval);
+                double yv = fabs(pval[1]/scale);
+                pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv + Cf*yv + Df);
+                trightFront->SetPoint(i,pval);
+                // back
+                trightBack->GetPoint(i,pval);
+                yv = fabs(pval[1]/scale);
+                pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv + Cf*yv + Df);
+                trightBack->SetPoint(i,pval);
             }
             // ring
             npts = trightRing->GetNumberOfPoints();
-#pragma omp parallel for
+
+            #pragma omp parallel for
             for(int i=0; i<npts; i++){
-    double pval[3];
-    trightRing->GetPoint(i,pval);
-    double yv = fabs(pval[1]/scale);
-    pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
-                 Cf*yv + Df);
-    trightRing->SetPoint(i,pval);
+                double pval[3];
+                trightRing->GetPoint(i,pval);
+                double yv = fabs(pval[1]/scale);
+                pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv + Cf*yv + Df);
+                trightRing->SetPoint(i,pval);
             }
 
             brightFront->ComputeBounds();
             brightFront->GetBounds(bound);
-            if(fabs(bound[2]) > fabs(bound[3])){
-    scale = fabs(bound[2]);
-            } else {
-    scale = fabs(bound[3]);
-            }
+            scale = std::max(fabs(bound[2]), fabs(bound[3]));
             npts = brightFront->GetNumberOfPoints();
-#pragma omp parallel for
+
+            #pragma omp parallel for
             for(int i=0; i<npts; i++){
-    double pval[3];
-    //front
-    brightFront->GetPoint(i,pval);
-    double yv = fabs(pval[1]/scale);
-    pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
-                 Cf*yv + Df);
-    brightFront->SetPoint(i,pval);
-    // back
-    brightBack->GetPoint(i,pval);
-    yv = fabs(pval[1]/scale);
-    pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
-                 Cf*yv + Df);
-    brightBack->SetPoint(i,pval);
+                double pval[3];
+                //front
+                brightFront->GetPoint(i,pval);
+                double yv = fabs(pval[1]/scale);
+                pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv + Cf*yv + Df);
+                brightFront->SetPoint(i,pval);
+                // back
+                brightBack->GetPoint(i,pval);
+                yv = fabs(pval[1]/scale);
+                pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv + Cf*yv + Df);
+                brightBack->SetPoint(i,pval);
             }
             // ring
             npts = brightRing->GetNumberOfPoints();
-#pragma omp parallel for
+
+            #pragma omp parallel for
             for(int i=0; i<npts; i++){
-    double pval[3];
-    brightRing->GetPoint(i,pval);
-    double yv = fabs(pval[1]/scale);
-    pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
-                 Cf*yv + Df);
-    brightRing->SetPoint(i,pval);
+                double pval[3];
+                brightRing->GetPoint(i,pval);
+                double yv = fabs(pval[1]/scale);
+                pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
+                            Cf*yv + Df);
+                brightRing->SetPoint(i,pval);
             }
         } else {
             // right side
             tleftFront->ComputeBounds();
             double bound[6];
             tleftFront->GetBounds(bound);
-            double scale;
-            if(fabs(bound[2]) > fabs(bound[3])){
-    scale = fabs(bound[2]);
-            } else {
-    scale = fabs(bound[3]);
-            }
+            double scale = std::max(fabs(bound[2]), fabs(bound[3]));
             vtkIdType npts = tleftFront->GetNumberOfPoints();
-#pragma omp parallel for
+
+            #pragma omp parallel for
             for(int i=0; i<npts; i++){
-    double pval[3];
-    // front
-    tleftFront->GetPoint(i,pval);
-    double yv = fabs(pval[1]/scale);
-    pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
-                 Cf*yv + Df);
-    tleftFront->SetPoint(i,pval);
-    // back
-    tleftBack->GetPoint(i,pval);
-    yv = fabs(pval[1]/scale);
-    pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
-                 Cf*yv + Df);
-    tleftBack->SetPoint(i,pval);
+                double pval[3];
+                // front
+                tleftFront->GetPoint(i,pval);
+                double yv = fabs(pval[1]/scale);
+                pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
+                            Cf*yv + Df);
+                tleftFront->SetPoint(i,pval);
+                // back
+                tleftBack->GetPoint(i,pval);
+                yv = fabs(pval[1]/scale);
+                pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
+                            Cf*yv + Df);
+                tleftBack->SetPoint(i,pval);
             }
             // ring
             npts = tleftRing->GetNumberOfPoints();
-#pragma omp parallel for
+
+            #pragma omp parallel for
             for(int i=0; i<npts; i++){
-    double pval[3];
-    tleftRing->GetPoint(i,pval);
-    double yv = fabs(pval[1]/scale);
-    pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
-                 Cf*yv + Df);
-    tleftRing->SetPoint(i,pval);
+                double pval[3];
+                tleftRing->GetPoint(i,pval);
+                double yv = fabs(pval[1]/scale);
+                pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
+                            Cf*yv + Df);
+                tleftRing->SetPoint(i,pval);
             }
 
             bleftFront->ComputeBounds();
             bleftFront->GetBounds(bound);
-            if(fabs(bound[2]) > fabs(bound[3])){
-    scale = fabs(bound[2]);
-            } else {
-    scale = fabs(bound[3]);
-            }
+            scale = std::max(fabs(bound[2]), fabs(bound[3]));
             npts = bleftFront->GetNumberOfPoints();
-#pragma omp parallel for
+
+            #pragma omp parallel for
             for(int i=0; i<npts; i++){
-    double pval[3];
-    // front
-    bleftFront->GetPoint(i,pval);
-    double yv = fabs(pval[1]/scale);
-    pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
-                 Cf*yv + Df);
-    bleftFront->SetPoint(i,pval);
-    // back
-    bleftBack->GetPoint(i,pval);
-    yv = fabs(pval[1]/scale);
-    pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
-                 Cf*yv + Df);
-    bleftBack->SetPoint(i,pval);
+                double pval[3];
+                // front
+                bleftFront->GetPoint(i,pval);
+                double yv = fabs(pval[1]/scale);
+                pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv + Cf*yv + Df);
+                bleftFront->SetPoint(i,pval);
+                // back
+                bleftBack->GetPoint(i,pval);
+                yv = fabs(pval[1]/scale);
+                pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv + Cf*yv + Df);
+                bleftBack->SetPoint(i,pval);
             }
             // ring
             npts = bleftRing->GetNumberOfPoints();
             //#pragma omp parallel for
             for(int i=0; i<npts; i++){
-    double pval[3];
-    bleftRing->GetPoint(i,pval);
-    double yv = fabs(pval[1]/scale);
-    pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
-                 Cf*yv + Df);
-    bleftRing->SetPoint(i,pval);
+                double pval[3];
+                bleftRing->GetPoint(i,pval);
+                double yv = fabs(pval[1]/scale);
+                pval[1] = pval[1]*(Af*yv*yv*yv + Bf*yv*yv +
+                            Cf*yv + Df);
+                bleftRing->SetPoint(i,pval);
             }
         }
     }
@@ -1034,68 +1004,57 @@ static int run_with_config(const po::variables_map& vm) {
         trightFront->ComputeBounds();
         double bound[6];
         trightFront->GetBounds(bound);
-        double scale;
-        if(fabs(bound[4]) > fabs(bound[5])){
-            scale = fabs(bound[4]);
-        } else {
-            scale = fabs(bound[5]);
-        }
+        double scale = std::max(fabs(bound[4]), fabs(bound[5]));
         vtkIdType npts = trightFront->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             // front
             trightFront->GetPoint(i,pval);
-            pval[1] = pval[1] - h0*pval[2]/scale -
-    h1*pval[2]*pval[2]/scale/scale;
+            pval[1] = pval[1] - h0*pval[2]/scale - h1*pval[2]*pval[2]/scale/scale;
             trightFront->SetPoint(i,pval);
             // back
             trightBack->GetPoint(i,pval);
-            pval[1] = pval[1] - h0*pval[2]/scale -
-    h1*pval[2]*pval[2]/scale/scale;
+            pval[1] = pval[1] - h0*pval[2]/scale - h1*pval[2]*pval[2]/scale/scale;
             trightBack->SetPoint(i,pval);
         }
         // ring
         npts = trightRing->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             trightRing->GetPoint(i,pval);
-            pval[1] = pval[1] - h0*pval[2]/scale -
-    h1*pval[2]*pval[2]/scale/scale;
+            pval[1] = pval[1] - h0*pval[2]/scale - h1*pval[2]*pval[2]/scale/scale;
             trightRing->SetPoint(i,pval);
         }
 
         tleftFront->ComputeBounds();
         tleftFront->GetBounds(bound);
-        if(fabs(bound[4]) > fabs(bound[5])){
-            scale = fabs(bound[4]);
-        } else {
-            scale = fabs(bound[5]);
-        }
+        scale = std::max(fabs(bound[4]), fabs(bound[5]));
         npts = tleftFront->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             // front
             tleftFront->GetPoint(i,pval);
-            pval[1] = pval[1] - h0*pval[2]/scale -
-    h1*pval[2]*pval[2]/scale/scale;
+            pval[1] = pval[1] - h0*pval[2]/scale - h1*pval[2]*pval[2]/scale/scale;
             tleftFront->SetPoint(i,pval);
             // back
             tleftBack->GetPoint(i,pval);
-            pval[1] = pval[1] - h0*pval[2]/scale -
-    h1*pval[2]*pval[2]/scale/scale;
+            pval[1] = pval[1] - h0*pval[2]/scale - h1*pval[2]*pval[2]/scale/scale;
             tleftBack->SetPoint(i,pval);
         }
         // ring
         npts = tleftRing->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             tleftRing->GetPoint(i,pval);
-            pval[1] = pval[1] - h0*pval[2]/scale -
-    h1*pval[2]*pval[2]/scale/scale;
+            pval[1] = pval[1] - h0*pval[2]/scale - h1*pval[2]*pval[2]/scale/scale;
             tleftRing->SetPoint(i,pval);
         }
     }
@@ -1103,7 +1062,8 @@ static int run_with_config(const po::variables_map& vm) {
     // ptosis
     if(doPtosis){
         vtkIdType npts = trightFront->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             // front
@@ -1117,7 +1077,8 @@ static int run_with_config(const po::variables_map& vm) {
         }
         // ring
         npts = trightRing->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             trightRing->GetPoint(i,pval);
@@ -1126,7 +1087,8 @@ static int run_with_config(const po::variables_map& vm) {
         }
 
         npts = tleftFront->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             // front
@@ -1140,7 +1102,8 @@ static int run_with_config(const po::variables_map& vm) {
         }
         // ring
         npts = tleftRing->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             tleftRing->GetPoint(i,pval);
@@ -1149,7 +1112,8 @@ static int run_with_config(const po::variables_map& vm) {
         }
 
         npts = brightFront->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             // front
@@ -1163,7 +1127,8 @@ static int run_with_config(const po::variables_map& vm) {
         }
         // ring
         npts = brightRing->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             brightRing->GetPoint(i,pval);
@@ -1172,7 +1137,8 @@ static int run_with_config(const po::variables_map& vm) {
         }
 
         npts = bleftFront->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             // front
@@ -1186,7 +1152,8 @@ static int run_with_config(const po::variables_map& vm) {
         }
         // ring
         npts = bleftRing->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             bleftRing->GetPoint(i,pval);
@@ -1198,7 +1165,8 @@ static int run_with_config(const po::variables_map& vm) {
     // turn
     if(doTurn){
         vtkIdType npts = trightFront->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             // front
@@ -1212,7 +1180,8 @@ static int run_with_config(const po::variables_map& vm) {
         }
         // ring
         npts = trightRing->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             trightRing->GetPoint(i,pval);
@@ -1221,7 +1190,8 @@ static int run_with_config(const po::variables_map& vm) {
         }
 
         npts = tleftFront->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             // front
@@ -1235,7 +1205,8 @@ static int run_with_config(const po::variables_map& vm) {
         }
         // ring
         npts = tleftRing->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             tleftRing->GetPoint(i,pval);
@@ -1244,7 +1215,8 @@ static int run_with_config(const po::variables_map& vm) {
         }
 
         npts = brightFront->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             // front
@@ -1258,7 +1230,8 @@ static int run_with_config(const po::variables_map& vm) {
         }
         // ring
         npts = brightRing->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             brightRing->GetPoint(i,pval);
@@ -1267,7 +1240,8 @@ static int run_with_config(const po::variables_map& vm) {
         }
 
         npts = bleftFront->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             // front
@@ -1281,7 +1255,8 @@ static int run_with_config(const po::variables_map& vm) {
         }
         // ring
         npts = bleftRing->GetNumberOfPoints();
-#pragma omp parallel for
+
+        #pragma omp parallel for
         for(int i=0; i<npts; i++){
             double pval[3];
             bleftRing->GetPoint(i,pval);
@@ -1300,8 +1275,7 @@ static int run_with_config(const po::variables_map& vm) {
     }
 
     // aggregate front points
-    vtkSmartPointer<vtkPoints> frontPts =
-        vtkSmartPointer<vtkPoints>::New();
+    auto frontPts = vtkSmartPointer<vtkPoints>::New();
 
     for(vtkIdType i=0; i<brightFront->GetNumberOfPoints(); i++){
         double t[3];
@@ -1326,23 +1300,19 @@ static int run_with_config(const po::variables_map& vm) {
     vtkIdType numFrontPts = frontPts->GetNumberOfPoints();
 
     // decimate front points
-    vtkSmartPointer<vtkPolyData> frontPoly =
-        vtkSmartPointer<vtkPolyData>::New();
+    auto frontPoly = vtkSmartPointer<vtkPolyData>::New();
     frontPoly->SetPoints(frontPts);
-    vtkSmartPointer<vtkVertexGlyphFilter> frontVertAdd =
-        vtkSmartPointer<vtkVertexGlyphFilter>::New();
+    auto frontVertAdd = vtkSmartPointer<vtkVertexGlyphFilter>::New();
     frontVertAdd->SetInputData(frontPoly);
 
     frontVertAdd->Update();
-    vtkSmartPointer<vtkCleanPolyData> cleanFront =
-        vtkSmartPointer<vtkCleanPolyData>::New();
+    auto cleanFront = vtkSmartPointer<vtkCleanPolyData>::New();
     cleanFront->SetInputConnection(frontVertAdd->GetOutputPort());
     cleanFront->SetTolerance(pointSep);
     cleanFront->Update();
 
     // aggregate and shift back points
-    vtkSmartPointer<vtkPoints> backPts =
-        vtkSmartPointer<vtkPoints>::New();
+    auto backPts = vtkSmartPointer<vtkPoints>::New();
 
     // ringWidth and ringSep converted to non-physical coordinates
     double ringWidth = vm["shape.ringWidth"].as<double>();
@@ -1378,11 +1348,9 @@ static int run_with_config(const po::variables_map& vm) {
     vtkIdType numBackPts = backPts->GetNumberOfPoints();
 
     // decimate back points
-    vtkSmartPointer<vtkPolyData> backPoly =
-        vtkSmartPointer<vtkPolyData>::New();
+    auto backPoly = vtkSmartPointer<vtkPolyData>::New();
     backPoly->SetPoints(backPts);
-    vtkSmartPointer<vtkVertexGlyphFilter> backVertAdd =
-        vtkSmartPointer<vtkVertexGlyphFilter>::New();
+    auto backVertAdd = vtkSmartPointer<vtkVertexGlyphFilter>::New();
     backVertAdd->SetInputData(backPoly);
     backVertAdd->Update();
     vtkSmartPointer<vtkCleanPolyData> cleanBack =
@@ -1392,8 +1360,7 @@ static int run_with_config(const po::variables_map& vm) {
     cleanBack->Update();
 
     // aggregate ring points and create thickness
-    vtkSmartPointer<vtkPoints> ringPts =
-        vtkSmartPointer<vtkPoints>::New();
+    auto ringPts = vtkSmartPointer<vtkPoints>::New();
 
     for(vtkIdType i=0; i<brightRing->GetNumberOfPoints(); i++){
         double t[3];
@@ -1442,22 +1409,18 @@ static int run_with_config(const po::variables_map& vm) {
     vtkIdType numRingPts = ringPts->GetNumberOfPoints();
 
     // decimate ring points
-    vtkSmartPointer<vtkPolyData> ringPoly =
-        vtkSmartPointer<vtkPolyData>::New();
+    auto ringPoly = vtkSmartPointer<vtkPolyData>::New();
     ringPoly->SetPoints(ringPts);
-    vtkSmartPointer<vtkVertexGlyphFilter> ringVertAdd =
-        vtkSmartPointer<vtkVertexGlyphFilter>::New();
+    auto ringVertAdd = vtkSmartPointer<vtkVertexGlyphFilter>::New();
     ringVertAdd->SetInputData(ringPoly);
     ringVertAdd->Update();
-    vtkSmartPointer<vtkCleanPolyData> cleanRing =
-        vtkSmartPointer<vtkCleanPolyData>::New();
+    auto cleanRing = vtkSmartPointer<vtkCleanPolyData>::New();
     cleanRing->SetInputConnection(ringVertAdd->GetOutputPort());
     cleanRing->SetTolerance(pointSep);
     cleanRing->Update();
 
     // allocate space for breast points
-    vtkSmartPointer<vtkPoints> breastPts =
-        vtkSmartPointer<vtkPoints>::New();
+    auto breastPts = vtkSmartPointer<vtkPoints>::New();
 
     vtkIdType numBreastPts = cleanFront->GetOutput()->GetNumberOfPoints();
     numBreastPts += cleanBack->GetOutput()->GetNumberOfPoints();
@@ -1465,8 +1428,7 @@ static int run_with_config(const po::variables_map& vm) {
     breastPts->SetNumberOfPoints(numBreastPts);
 
     // cell array for verticies
-    vtkSmartPointer<vtkCellArray> breastVerts =
-        vtkSmartPointer<vtkCellArray>::New();
+    auto breastVerts = vtkSmartPointer<vtkCellArray>::New();
 
     // scale to physical units
     vtkIdType totalCount = 0;
@@ -1512,16 +1474,14 @@ static int run_with_config(const po::variables_map& vm) {
     }
 
     // create polydata
-    vtkSmartPointer<vtkPolyData> breastPoly =
-        vtkSmartPointer<vtkPolyData>::New();
+    auto breastPoly = vtkSmartPointer<vtkPolyData>::New();
     breastPoly->SetPoints(breastPts);
 
     // add verticies to polydata
     breastPoly->SetVerts(breastVerts);
 
     // surface mesh reconstruction
-    vtkSmartPointer<vtkSurfaceReconstructionFilter> breastFilter =
-        vtkSmartPointer<vtkSurfaceReconstructionFilter>::New();
+    auto breastFilter = vtkSmartPointer<vtkSurfaceReconstructionFilter>::New();
 
     breastFilter->SetInputData(breastPoly);
     breastFilter->Update();
@@ -1530,16 +1490,14 @@ static int run_with_config(const po::variables_map& vm) {
     double pointSetBounds[6];
     breastPts->GetBounds(pointSetBounds);
 
-    vtkSmartPointer<vtkContourFilter> breastContourFilter =
-        vtkSmartPointer<vtkContourFilter>::New();
+    auto breastContourFilter = vtkSmartPointer<vtkContourFilter>::New();
 
     breastContourFilter->SetInputConnection(breastFilter->GetOutputPort());
     breastContourFilter->ComputeNormalsOn();
     breastContourFilter->SetValue(0, 0.0);
     breastContourFilter->Update();
 
-    vtkSmartPointer<vtkReverseSense> breastSenseFilter =
-        vtkSmartPointer<vtkReverseSense>::New();
+    auto breastSenseFilter = vtkSmartPointer<vtkReverseSense>::New();
 
     breastSenseFilter->SetInputConnection(breastContourFilter->GetOutputPort());
     breastSenseFilter->ReverseCellsOn();
@@ -1555,37 +1513,31 @@ static int run_with_config(const po::variables_map& vm) {
     scaling[1] = (pointSetBounds[3]-pointSetBounds[2])/(surfaceBounds[3]-surfaceBounds[2]);
     scaling[2] = (pointSetBounds[5]-pointSetBounds[4])/(surfaceBounds[5]-surfaceBounds[4]);
 
-    vtkSmartPointer<vtkTransform> transp =
-        vtkSmartPointer<vtkTransform>::New();
+    auto transp = vtkSmartPointer<vtkTransform>::New();
     transp->Translate(pointSetBounds[0], pointSetBounds[2], pointSetBounds[4]);
     transp->Scale(scaling[0], scaling[1], scaling[2]);
     transp->Translate(-surfaceBounds[0], -surfaceBounds[2], -surfaceBounds[4]);
 
-    vtkSmartPointer<vtkTransformPolyDataFilter> fixed =
-        vtkSmartPointer<vtkTransformPolyDataFilter>::New();
+    auto fixed = vtkSmartPointer<vtkTransformPolyDataFilter>::New();
     fixed->SetInputData(breastSenseFilter->GetOutput());
     fixed->SetTransform(transp);
     fixed->Update();
 
     // clean mesh
-    vtkSmartPointer<vtkCleanPolyData> cleanPoly =
-        vtkSmartPointer<vtkCleanPolyData>::New();
+    auto cleanPoly = vtkSmartPointer<vtkCleanPolyData>::New();
     cleanPoly->SetInputConnection(fixed->GetOutputPort());
 
     // decimate mesh
-    vtkSmartPointer<vtkDecimatePro> decimate =
-        vtkSmartPointer<vtkDecimatePro>::New();
+    auto decimate = vtkSmartPointer<vtkDecimatePro>::New();
     decimate->SetTargetReduction(0.25);
     decimate->SetInputConnection(cleanPoly->GetOutputPort());
     decimate->Update();
 
-    vtkSmartPointer<vtkPolyData> innerPoly =
-        vtkSmartPointer<vtkPolyData>::New();
+    auto innerPoly = vtkSmartPointer<vtkPolyData>::New();
     innerPoly->ShallowCopy(decimate->GetOutput());
 
     // create 3d imagedata
-    vtkSmartPointer<vtkImageData> breast =
-        vtkSmartPointer<vtkImageData>::New();
+    auto breast = vtkSmartPointer<vtkImageData>::New();
 
     double baseBound[6];
     innerPoly->GetBounds(baseBound);
@@ -1659,16 +1611,19 @@ static int run_with_config(const po::variables_map& vm) {
     int maxThread = omp_get_max_threads();
 
     // boundary sub-lists
-    vtkSmartPointer<vtkIdList> *subList1 = new vtkSmartPointer<vtkIdList>[maxThread];
-    vtkSmartPointer<vtkIdList> *subList2 = new vtkSmartPointer<vtkIdList>[maxThread];
-    vtkSmartPointer<vtkIdList> *subList3 = new vtkSmartPointer<vtkIdList>[maxThread];
-    for(int i=0; i<maxThread; i++){
-        subList1[i] = vtkSmartPointer<vtkIdList>::New();
-        subList2[i] = vtkSmartPointer<vtkIdList>::New();
-        subList3[i] = vtkSmartPointer<vtkIdList>::New();
+    auto subList1 = std::vector<vtkSmartPointer<vtkIdList>>();
+    subList1.reserve(maxThread);
+    auto subList2 = std::vector<vtkSmartPointer<vtkIdList>>();
+    subList2.reserve(maxThread);
+    auto subList3 = std::vector<vtkSmartPointer<vtkIdList>>();
+    subList3.reserve(maxThread);
+    for (int i = 0; i < maxThread; i++) {
+        subList1.emplace_back(vtkSmartPointer<vtkIdList>::New());
+        subList2.emplace_back(vtkSmartPointer<vtkIdList>::New());
+        subList3.emplace_back(vtkSmartPointer<vtkIdList>::New());
     }
 
-#pragma omp parallel num_threads(maxThread)
+    #pragma omp parallel num_threads(maxThread)
     {
         int numThread = omp_get_num_threads();
         int myThread = omp_get_thread_num();
@@ -1685,273 +1640,271 @@ static int run_with_config(const po::variables_map& vm) {
 
         // find intersect with top and bottom surface to voxelize breast
         // iterate over x and y values
-        for(int i=myThread; i<dim[0]; i+=numThread){
+        for (int i=myThread; i<dim[0]; i+=numThread) {
             double xpos = origin[0]+i*spacing[0];
             int ijk[3];
             ijk[0] = i;
             for(int j=0; j<dim[1]; j++){
 
-    double ypos = origin[1]+j*spacing[1];
-    ijk[1] = j;
-    // calculate z position of top surface
-    double lineStart[3]; // end points of line
-    double lineEnd[3];
+            double ypos = origin[1]+j*spacing[1];
+            ijk[1] = j;
+            // calculate z position of top surface
+            double lineStart[3]; // end points of line
+            double lineEnd[3];
 
-    double tol = 0.005;
-    double tval;
-    vtkIdType intersectCell;
-    int subId;
+            double tol = 0.005;
+            double tval;
+            vtkIdType intersectCell;
+            int subId;
 
-    double intersect[3]; // output position
-    double pcoords[3];
+            double intersect[3]; // output position
+            double pcoords[3];
 
-    lineStart[0] = xpos;
-    lineStart[1] = ypos;
-    lineStart[2] = baseBound[4];
+            lineStart[0] = xpos;
+            lineStart[1] = ypos;
+            lineStart[2] = baseBound[4];
 
-    lineEnd[0] = xpos;
-    lineEnd[1] = ypos;
-    lineEnd[2] = baseBound[5];
+            lineEnd[0] = xpos;
+            lineEnd[1] = ypos;
+            lineEnd[2] = baseBound[5];
 
-    if(innerLocator->IntersectWithLine(lineStart, lineEnd, tol,
-                         tval, intersect, pcoords, subId, intersectCell)){
+                if (innerLocator->IntersectWithLine(lineStart, lineEnd, tol, tval, intersect, pcoords, subId, intersectCell)) {
 
-        // found intersection
-        double topZ = intersect[2];
+                    // found intersection
+                    double topZ = intersect[2];
 
-        // do other direction
-        lineStart[2] = baseBound[5];
-        lineEnd[2] = baseBound[4];
+                    // do other direction
+                    lineStart[2] = baseBound[5];
+                    lineEnd[2] = baseBound[4];
 
-        if(innerLocator->IntersectWithLine(lineStart, lineEnd, tol,
-                             tval, intersect, pcoords, subId, intersectCell)){
+                    if (innerLocator->IntersectWithLine(lineStart, lineEnd, tol, tval, intersect, pcoords, subId, intersectCell)) {
 
-            double bottomZ = intersect[2];
+                        double bottomZ = intersect[2];
 
-            // find nearest voxels to intersections
-            int indexTop = static_cast<int>(floor((topZ-origin[2])/spacing[2]));
-            int indexBottom = static_cast<int>(ceil((bottomZ-origin[2])/spacing[2]));
+                        // find nearest voxels to intersections
+                        int indexTop = static_cast<int>(floor((topZ-origin[2])/spacing[2]));
+                        int indexBottom = static_cast<int>(ceil((bottomZ-origin[2])/spacing[2]));
 
-            // set edge voxels
-            unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,indexTop));
-            p[0] = boundVal;
-            ijk[2] = indexTop;
-            subList1[myThread]->InsertNextId(breast->ComputePointId(ijk));
-            p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,indexBottom));
-            p[0] = boundVal;
-            ijk[2] = indexBottom;
-            if(indexBottom != indexTop){
-                subList1[myThread]->InsertNextId(breast->ComputePointId(ijk));
-            }
-            // set voxels between these 2 points to inner value;
-            for(int k=indexTop+1; k<indexBottom; k++){
-                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-                p[0] = innerVal;
-            }
-        }
-    }
+                        // set edge voxels
+                        unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,indexTop));
+                        p[0] = boundVal;
+                        ijk[2] = indexTop;
+                        subList1[myThread]->InsertNextId(breast->ComputePointId(ijk));
+                        p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,indexBottom));
+                        p[0] = boundVal;
+                        ijk[2] = indexBottom;
+                        if(indexBottom != indexTop){
+                            subList1[myThread]->InsertNextId(breast->ComputePointId(ijk));
+                        }
+                        // set voxels between these 2 points to inner value;
+                        for(int k=indexTop+1; k<indexBottom; k++){
+                            unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                            p[0] = innerVal;
+                        }
+                    }
+                }
             }
         }
 
         // find intersect with second set of directions
         // iterate over x and z values
-        for(int i=myThread; i<dim[0]; i+=numThread){
+        for (int i=myThread; i<dim[0]; i+=numThread) {
             double xpos = origin[0]+i*spacing[0];
             int ijk[3];
             ijk[0] = i;
             for(int j=0; j<dim[2]; j++){
 
-    double zpos = origin[2]+j*spacing[2];
-    ijk[2] = j;
-    // calculate y position of top surface
-    double lineStart[3]; // end points of line
-    double lineEnd[3];
+                double zpos = origin[2]+j*spacing[2];
+                ijk[2] = j;
+                // calculate y position of top surface
+                double lineStart[3]; // end points of line
+                double lineEnd[3];
 
-    double tol = 0.005;
-    double tval;
-    vtkIdType intersectCell;
-    int subId;
+                double tol = 0.005;
+                double tval;
+                vtkIdType intersectCell;
+                int subId;
 
-    double intersect[3]; // output position
-    double pcoords[3];
+                double intersect[3]; // output position
+                double pcoords[3];
 
-    lineStart[0] = xpos;
-    lineStart[1] = baseBound[2];
-    lineStart[2] = zpos;
+                lineStart[0] = xpos;
+                lineStart[1] = baseBound[2];
+                lineStart[2] = zpos;
 
-    lineEnd[0] = xpos;
-    lineEnd[1] = baseBound[3];
-    lineEnd[2] = zpos;
+                lineEnd[0] = xpos;
+                lineEnd[1] = baseBound[3];
+                lineEnd[2] = zpos;
 
-    if(innerLocator->IntersectWithLine(lineStart, lineEnd, tol,
-                         tval, intersect, pcoords, subId, intersectCell)){
+                if(innerLocator->IntersectWithLine(lineStart, lineEnd, tol,
+                                    tval, intersect, pcoords, subId, intersectCell)){
 
-        // found intersection
-        double topY = intersect[1];
+                    // found intersection
+                    double topY = intersect[1];
 
-        // do other direction
-        lineStart[1] = baseBound[3];
-        lineEnd[1] = baseBound[2];
+                    // do other direction
+                    lineStart[1] = baseBound[3];
+                    lineEnd[1] = baseBound[2];
 
-        if(innerLocator->IntersectWithLine(lineStart, lineEnd, tol,
-                             tval, intersect, pcoords, subId, intersectCell)){
+                    if(innerLocator->IntersectWithLine(lineStart, lineEnd, tol,
+                                        tval, intersect, pcoords, subId, intersectCell)){
 
-            double bottomY = intersect[1];
+                        double bottomY = intersect[1];
 
-            // find nearest voxels to intersections
-            int indexTop = static_cast<int>(floor((topY-origin[1])/spacing[1]));
-            int indexBottom = static_cast<int>(ceil((bottomY-origin[1])/spacing[1]));
+                        // find nearest voxels to intersections
+                        int indexTop = static_cast<int>(floor((topY-origin[1])/spacing[1]));
+                        int indexBottom = static_cast<int>(ceil((bottomY-origin[1])/spacing[1]));
 
-            // set edge voxels
-            unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,indexTop,j));
-            p[0] = boundVal;
-            ijk[1] = indexTop;
-            subList2[myThread]->InsertNextId(breast->ComputePointId(ijk));
-            p = static_cast<unsigned char*>(breast->GetScalarPointer(i,indexBottom,j));
-            p[0] = boundVal;
-            ijk[1] = indexBottom;
-            if(indexBottom != indexTop){
-                subList2[myThread]->InsertNextId(breast->ComputePointId(ijk));
-            }
-            // set voxels between these 2 points to inner value;
-            for(int k=indexTop+1; k<indexBottom; k++){
-                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,k,j));
-                // only change if not boundary
-                if(p[0] != boundVal){
-        p[0] = innerVal;
+                        // set edge voxels
+                        unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,indexTop,j));
+                        p[0] = boundVal;
+                        ijk[1] = indexTop;
+                        subList2[myThread]->InsertNextId(breast->ComputePointId(ijk));
+                        p = static_cast<unsigned char*>(breast->GetScalarPointer(i,indexBottom,j));
+                        p[0] = boundVal;
+                        ijk[1] = indexBottom;
+                        if(indexBottom != indexTop){
+                            subList2[myThread]->InsertNextId(breast->ComputePointId(ijk));
+                        }
+                        // set voxels between these 2 points to inner value;
+                        for(int k=indexTop+1; k<indexBottom; k++){
+                            unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,k,j));
+                            // only change if not boundary
+                            if(p[0] != boundVal){
+                    p[0] = innerVal;
+                            }
+                        }
+                    }
                 }
-            }
-        }
-    }
             }
         }
 
         // find intersect with final set of directions
         // iterate over y and z values
-        for(int i=myThread; i<dim[1]; i+=numThread){
+        for (int i=myThread; i<dim[1]; i+=numThread) {
             double ypos = origin[1]+i*spacing[1];
             int ijk[3];
             ijk[1] = i;
-            for(int j=0; j<dim[2]; j++){
+            for (int j=0; j<dim[2]; j++) {
 
-    double zpos = origin[2]+j*spacing[2];
-    ijk[2] = j;
+                double zpos = origin[2]+j*spacing[2];
+                ijk[2] = j;
 
-    // calculate x position of top surface
-    double lineStart[3]; // end points of line
-    double lineEnd[3];
+                // calculate x position of top surface
+                double lineStart[3]; // end points of line
+                double lineEnd[3];
 
-    double tol = 0.005;
-    double tval;
-    vtkIdType intersectCell;
-    int subId;
+                double tol = 0.005;
+                double tval;
+                vtkIdType intersectCell;
+                int subId;
 
-    double intersect[3]; // output position
-    double pcoords[3];
+                double intersect[3]; // output position
+                double pcoords[3];
 
-    lineStart[0] = baseBound[0];
-    lineStart[1] = ypos;
-    lineStart[2] = zpos;
+                lineStart[0] = baseBound[0];
+                lineStart[1] = ypos;
+                lineStart[2] = zpos;
 
-    lineEnd[0] = baseBound[1];;
-    lineEnd[1] = ypos;
-    lineEnd[2] = zpos;
+                lineEnd[0] = baseBound[1];;
+                lineEnd[1] = ypos;
+                lineEnd[2] = zpos;
 
-    if(innerLocator->IntersectWithLine(lineStart, lineEnd, tol,
-                         tval, intersect, pcoords, subId, intersectCell)){
+                if(innerLocator->IntersectWithLine(lineStart, lineEnd, tol,
+                                    tval, intersect, pcoords, subId, intersectCell)){
 
-        // found intersection
-        double topX = intersect[0];
+                    // found intersection
+                    double topX = intersect[0];
 
-        // do other direction
-        lineStart[0] = baseBound[1];
-        lineEnd[0] = baseBound[0];
+                    // do other direction
+                    lineStart[0] = baseBound[1];
+                    lineEnd[0] = baseBound[0];
 
-        if(innerLocator->IntersectWithLine(lineStart, lineEnd, tol,
-                             tval, intersect, pcoords, subId, intersectCell)){
+                    if(innerLocator->IntersectWithLine(lineStart, lineEnd, tol,
+                                        tval, intersect, pcoords, subId, intersectCell)){
 
-            double bottomX = intersect[0];
+                        double bottomX = intersect[0];
 
-            // find nearest voxels to intersections
-            int indexTop = static_cast<int>(floor((topX-origin[0])/spacing[0]));
-            indexTop = (indexTop < 0) ? 0 : indexTop;
-            int indexBottom = static_cast<int>(ceil((bottomX-origin[0])/spacing[0]));
-            indexBottom = (indexBottom > dim[0]-1) ? dim[0]-1 : indexBottom;
-            indexBottom = (indexBottom < 0) ? 0 : indexBottom;
+                        // find nearest voxels to intersections
+                        int indexTop = static_cast<int>(floor((topX-origin[0])/spacing[0]));
+                        indexTop = (indexTop < 0) ? 0 : indexTop;
+                        int indexBottom = static_cast<int>(ceil((bottomX-origin[0])/spacing[0]));
+                        indexBottom = (indexBottom > dim[0]-1) ? dim[0]-1 : indexBottom;
+                        indexBottom = (indexBottom < 0) ? 0 : indexBottom;
 
-            // set edge voxels on front side only
-            unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(indexBottom,i,j));
-            p[0] = boundVal;
-            ijk[0] = indexBottom;
-            subList3[myThread]->InsertNextId(breast->ComputePointId(ijk));
-            // set voxels between these 2 points to inner value;
-            for(int k=indexTop+1; k<indexBottom; k++){
-                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(k,i,j));
-                // only change if not boundary
-                if(p[0] != boundVal){
-        p[0] = innerVal;
+                        // set edge voxels on front side only
+                        unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(indexBottom,i,j));
+                        p[0] = boundVal;
+                        ijk[0] = indexBottom;
+                        subList3[myThread]->InsertNextId(breast->ComputePointId(ijk));
+                        // set voxels between these 2 points to inner value;
+                        for(int k=indexTop+1; k<indexBottom; k++){
+                            unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(k,i,j));
+                            // only change if not boundary
+                            if(p[0] != boundVal){
+                                p[0] = innerVal;
+                            }
+                        }
+                    }
                 }
-            }
-        }
-    }
             }
         }
     }
 
     // combine lists
-#pragma omp parallel sections
+    #pragma omp parallel sections
     {
-#pragma omp section
+        #pragma omp section
         {
             vtkIdType nList1;
             vtkIdType c1 = 0;
             nList1 = subList1[0]->GetNumberOfIds();
             for(int i=1; i<maxThread; i++){
-    nList1 += subList1[i]->GetNumberOfIds();
+                nList1 += subList1[i]->GetNumberOfIds();
             }
             boundaryList1->SetNumberOfIds(nList1);
             for(int i=0; i<maxThread; i++){
-    int numPts = subList1[i]->GetNumberOfIds();
-    for(int j=0; j<numPts; j++){
-        boundaryList1->InsertId(c1,subList1[i]->GetId(j));
-        c1++;
-    }
+                int numPts = subList1[i]->GetNumberOfIds();
+                for(int j=0; j<numPts; j++){
+                    boundaryList1->InsertId(c1,subList1[i]->GetId(j));
+                    c1++;
+                }
             }
             vtkSortDataArray::Sort(boundaryList1);
         }
-#pragma omp section
+        #pragma omp section
         {
             vtkIdType nList2;
             vtkIdType c2 = 0;
             nList2 = subList2[0]->GetNumberOfIds();
             for(int i=1; i<maxThread;i++){
-    nList2 += subList2[i]->GetNumberOfIds();
+                nList2 += subList2[i]->GetNumberOfIds();
             }
             boundaryList2->SetNumberOfIds(nList2);
             for(int i=0; i<maxThread; i++){
-    int numPts = subList2[i]->GetNumberOfIds();
-    for(int j=0; j<numPts; j++){
-        boundaryList2->InsertId(c2,subList2[i]->GetId(j));
-        c2++;
-    }
+                int numPts = subList2[i]->GetNumberOfIds();
+                for(int j=0; j<numPts; j++){
+                    boundaryList2->InsertId(c2,subList2[i]->GetId(j));
+                    c2++;
+                }
             }
             vtkSortDataArray::Sort(boundaryList2);
         }
-#pragma omp section
+        #pragma omp section
         {
             vtkIdType nList3;
             vtkIdType c3 = 0;
             nList3 = subList3[0]->GetNumberOfIds();
             for(int i=1; i<maxThread;i++){
-    nList3 += subList3[i]->GetNumberOfIds();
+                nList3 += subList3[i]->GetNumberOfIds();
             }
             boundaryList3->SetNumberOfIds(nList3);
             for(int i=0; i<maxThread; i++){
-    int numPts = subList3[i]->GetNumberOfIds();
-    for(int j=0; j<numPts; j++){
-        boundaryList3->InsertId(c3,subList3[i]->GetId(j));
-        c3++;
-    }
+                int numPts = subList3[i]->GetNumberOfIds();
+                for(int j=0; j<numPts; j++){
+                    boundaryList3->InsertId(c3,subList3[i]->GetId(j));
+                    c3++;
+                }
             }
             vtkSortDataArray::Sort(boundaryList3);
         }
@@ -1973,74 +1926,32 @@ static int run_with_config(const po::variables_map& vm) {
     bool dList2 = false;
     bool dList3 = false;
 
-    while(!dList1 || !dList2 || !dList3){
-        vtkIdType curMin;
-        if(!dList1){
-            curMin = *pList1;
-            if(!dList2){
-    curMin = *pList2 < curMin ? *pList2 : curMin;
-    if(!dList3){
-        curMin = *pList3 < curMin ? *pList3 : curMin;
-        // check 1,2,3
-        boundaryList->InsertNextId(curMin);
-        while(*pList1 == curMin && !dList1){
-            cList1++;
-            if(cList1 < nList1){
-                pList1++;
-            } else {
-                dList1 = true;
-            }
-        }
-        while(*pList2 == curMin && !dList2){
-            cList2++;
-            if(cList2 < nList2){
-                pList2++;
-            } else {
-                dList2 = true;
-            }
-        }
-        while(*pList3 == curMin && !dList3){
-                        cList3++;
-                        if(cList3 < nList3){
-                pList3++;
-                        } else {
-                dList3 = true;
-                        }
-                    }
-    } else {
-        // check 1,2
-        boundaryList->InsertNextId(curMin);
-        while(*pList1 == curMin && !dList1){
+    while (!dList1 || !dList2 || !dList3) {
+        if (!dList1) {
+            vtkIdType curMin = *pList1;
+            if (!dList2) {
+                curMin = *pList2 < curMin ? *pList2 : curMin;
+                if(!dList3){
+                    curMin = *pList3 < curMin ? *pList3 : curMin;
+                    // check 1,2,3
+                    boundaryList->InsertNextId(curMin);
+                    while(*pList1 == curMin && !dList1){
                         cList1++;
-                        if(cList1 <nList1){
+                        if(cList1 < nList1){
                             pList1++;
-            } else {
-                dList1 = true;
-                        }
-                    }
-        while(*pList2 == curMin && !dList2){
-                        cList2++;
-                        if(cList2 <nList2){
-                pList2++;
                         } else {
-                dList2 = true;
+                            dList1 = true;
                         }
                     }
-    }
-            } else {
-    if(!dList3){
-        curMin = *pList3 < curMin ? *pList3 : curMin;
-        // check 1,3
-        boundaryList->InsertNextId(curMin);
-        while(*pList1 == curMin && !dList1){
-            cList1++;
-            if(cList1 <nList1){
-                pList1++;
-            } else {
-                dList1 = true;
-            }
-        }
-        while(*pList3 == curMin && !dList3){
+                    while(*pList2 == curMin && !dList2){
+                        cList2++;
+                        if(cList2 < nList2){
+                            pList2++;
+                        } else {
+                            dList2 = true;
+                        }
+                    }
+                    while(*pList3 == curMin && !dList3){
                         cList3++;
                         if(cList3 < nList3){
                             pList3++;
@@ -2048,10 +1959,10 @@ static int run_with_config(const po::variables_map& vm) {
                             dList3 = true;
                         }
                     }
-    } else {
-        // check 1
-        boundaryList->InsertNextId(curMin);
-        while(*pList1 == curMin && !dList1){
+                } else {
+                    // check 1,2
+                    boundaryList->InsertNextId(curMin);
+                    while (*pList1 == curMin && !dList1) {
                         cList1++;
                         if(cList1 <nList1){
                             pList1++;
@@ -2059,17 +1970,7 @@ static int run_with_config(const po::variables_map& vm) {
                             dList1 = true;
                         }
                     }
-    }
-            }
-        } else {
-            // 1 done
-            if(!dList2){
-    curMin = *pList2;
-    if(!dList3){
-        curMin = *pList3 < curMin ? *pList3 : curMin;
-        // check 2,3
-        boundaryList->InsertNextId(curMin);
-        while(*pList2 == curMin && !dList2){
+                    while(*pList2 == curMin && !dList2){
                         cList2++;
                         if(cList2 <nList2){
                             pList2++;
@@ -2077,7 +1978,21 @@ static int run_with_config(const po::variables_map& vm) {
                             dList2 = true;
                         }
                     }
-        while(*pList3 == curMin && !dList3){
+                }
+            } else {
+                if (!dList3) {
+                    curMin = *pList3 < curMin ? *pList3 : curMin;
+                    // check 1,3
+                    boundaryList->InsertNextId(curMin);
+                    while(*pList1 == curMin && !dList1){
+                        cList1++;
+                        if(cList1 <nList1){
+                            pList1++;
+                        } else {
+                            dList1 = true;
+                        }
+                    }
+                    while(*pList3 == curMin && !dList3){
                         cList3++;
                         if(cList3 < nList3){
                             pList3++;
@@ -2085,44 +2000,72 @@ static int run_with_config(const po::variables_map& vm) {
                             dList3 = true;
                         }
                     }
-    } else {
-        // check 2
-        boundaryList->InsertNextId(curMin);
-        while(*pList2 == curMin && !dList2){
-                        cList2++;
-                        if(cList2 <nList2){
-                            pList2++;
+                } else {
+                    // check 1
+                    boundaryList->InsertNextId(curMin);
+                    while(*pList1 == curMin && !dList1){
+                        cList1++;
+                        if(cList1 <nList1){
+                            pList1++;
                         } else {
-                            dList2 = true;
+                            dList1 = true;
                         }
                     }
-    }
+                }
+            }
+        } else if (!dList2) { // 1 done
+            vtkIdType curMin = *pList2;
+            if(!dList3) {
+                curMin = *pList3 < curMin ? *pList3 : curMin;
+                // check 2,3
+                boundaryList->InsertNextId(curMin);
+                while(*pList2 == curMin && !dList2){
+                                cList2++;
+                                if(cList2 <nList2){
+                                    pList2++;
+                                } else {
+                                    dList2 = true;
+                                }
+                            }
+                while(*pList3 == curMin && !dList3){
+                    cList3++;
+                    if(cList3 < nList3){
+                        pList3++;
+                    } else {
+                        dList3 = true;
+                    }
+                }
             } else {
-    // only 3 left
-    curMin = *pList3;
-    boundaryList->InsertNextId(curMin);
-    while(*pList3 == curMin && !dList3){
-        cList3++;
-        if(cList3 < nList3){
-            pList3++;
-        } else {
-            dList3 = true;
-        }
-    }
+                // check 2
+                boundaryList->InsertNextId(curMin);
+                while(*pList2 == curMin && !dList2){
+                    cList2++;
+                    if(cList2 <nList2){
+                        pList2++;
+                    } else {
+                        dList2 = true;
+                    }
+                }
+            }
+        } else { // only 3 left
+            vtkIdType curMin = *pList3;
+            boundaryList->InsertNextId(curMin);
+            while(*pList3 == curMin && !dList3) {
+                cList3++;
+                if(cList3 < nList3){
+                    pList3++;
+                } else {
+                    dList3 = true;
+                }
             }
         }
     }
-
-    // delete array subList
-    delete [] subList1;
-    delete [] subList2;
-    delete [] subList3;
 
     // spdlog::info("done.");
 
     // correct boundary list to be all boundary values
     vtkIdType dnum = boundaryList->GetNumberOfIds();
-    for(vtkIdType i=0; i<dnum; i++){
+    for (vtkIdType i=0; i<dnum; i++) {
         double loc[3];
         int ijk[3];
         double pcoords[3];
@@ -2139,8 +2082,7 @@ static int run_with_config(const po::variables_map& vm) {
     ***********************/
 
     // create list of surrounding voxels to check
-    vtkSmartPointer<vtkIntArray> checkVoxels =
-        vtkSmartPointer<vtkIntArray>::New();
+    auto checkVoxels = vtkSmartPointer<vtkIntArray>::New();
 
     checkVoxels->SetNumberOfComponents(3);
 
@@ -2149,10 +2091,10 @@ static int run_with_config(const po::variables_map& vm) {
     for(int i=-1*voxelThick; i<=voxelThick; i++){
         for(int j=-1*voxelThick; j<=voxelThick; j++){
             for(int k=-1*voxelThick; k<=voxelThick; k++){
-    if(sqrt((double)(i*i+j*j+k*k))*imgRes <= skinThick){
-        // found a voxel to check
-        checkVoxels->InsertNextTuple3(i,j,k);
-    }
+                if(sqrt((double)(i*i+j*j+k*k))*imgRes <= skinThick){
+                    // found a voxel to check
+                    checkVoxels->InsertNextTuple3(i,j,k);
+                }
             }
         }
     }
@@ -2173,8 +2115,7 @@ static int run_with_config(const po::variables_map& vm) {
     double skinThick2 = skinThick*2.0;
 
     // find point on mesh closest to center
-    vtkSmartPointer<vtkPointLocator> locator =
-        vtkSmartPointer<vtkPointLocator>::New();
+    auto locator = vtkSmartPointer<vtkPointLocator>::New();
     locator->SetDataSet(innerPoly);
     locator->BuildLocator();
 
@@ -2191,7 +2132,7 @@ static int run_with_config(const po::variables_map& vm) {
 
     maxThread = omp_get_max_threads();
 
-#pragma omp parallel for num_threads(maxThread)
+    #pragma omp parallel for num_threads(maxThread)
     for(vtkIdType i=0; i<nCurBoundary; i++){
         int myThread = omp_get_thread_num();
         vtkIdType myId = boundaryList->GetId(i);
@@ -2206,71 +2147,69 @@ static int run_with_config(const po::variables_map& vm) {
         if(ijk[0] >= minSkinXVox){
             double nipDist2 = vtkMath::Distance2BetweenPoints(loc,nipplePos);
             if(nipDist2 > 4*areolaRad*areolaRad){
-    // boundary voxel for skinning
-    for(vtkIdType m=0; m<numCheck; m++){
-        double offset[3];
-        checkVoxels->GetTuple(m,offset);
-        int a,b,c;
-        a = ijk[0]+(int)offset[0];
-        b = ijk[1]+(int)offset[1];
-        c = ijk[2]+(int)offset[2];
-        if(a>=breastExtent[0] && a<=breastExtent[1] && b>=breastExtent[2] && b<=breastExtent[3] &&
-             c>=breastExtent[4] && c<=breastExtent[5]){
-            unsigned char* q =
-                static_cast<unsigned char*>(breast->GetScalarPointer(a,b,c));
-            if(q[0] == tissue.bg){
-#pragma omp atomic write
-                q[0] = tissue.skin;
-            }
-        }
-    }
-            } else {
-    // areola
-    double mySkinThick = skinThick + (skinThick2-skinThick)/(1+exp(12/areolaRad*(sqrt(nipDist2)-areolaRad)));
-    int mySearchRad = static_cast<int>(ceil(mySkinThick/imgRes));
-    for(int a=ijk[0]-mySearchRad; a<=ijk[0]+mySearchRad; a++){
-        for(int b=ijk[1]-mySearchRad; b<=ijk[1]+mySearchRad; b++){
-            for(int c=ijk[2]-mySearchRad; c<=ijk[2]+mySearchRad; c++){
-                unsigned char* q = static_cast<unsigned char*>(breast->GetScalarPointer(a,b,c));
-                if(q[0] == tissue.bg){
-        // check distance
-        double skinDist = imgRes*sqrt(static_cast<double>((a-ijk[0])*(a-ijk[0])+(b-ijk[1])*(b-ijk[1])+(c-ijk[2])*(c-ijk[2])));
-        if(skinDist <= mySkinThick){
-#pragma omp atomic write
-            q[0] = tissue.skin;
-        }
+                // boundary voxel for skinning
+                for(vtkIdType m=0; m<numCheck; m++){
+                    double offset[3];
+                    checkVoxels->GetTuple(m,offset);
+                    int a,b,c;
+                    a = ijk[0]+(int)offset[0];
+                    b = ijk[1]+(int)offset[1];
+                    c = ijk[2]+(int)offset[2];
+                    if(a>=breastExtent[0] && a<=breastExtent[1] && b>=breastExtent[2] && b<=breastExtent[3] &&
+                        c>=breastExtent[4] && c<=breastExtent[5]){
+                        auto q = static_cast<unsigned char*>(breast->GetScalarPointer(a,b,c));
+
+                        if(q[0] == tissue.bg){
+                            #pragma omp atomic write
+                            q[0] = tissue.skin;
+                        }
+                    }
                 }
-            }
-        }
-    }
+            } else {
+                // areola
+                double mySkinThick = skinThick + (skinThick2-skinThick)/(1+exp(12/areolaRad*(sqrt(nipDist2)-areolaRad)));
+                int mySearchRad = static_cast<int>(ceil(mySkinThick/imgRes));
+                for(int a=ijk[0]-mySearchRad; a<=ijk[0]+mySearchRad; a++){
+                    for(int b=ijk[1]-mySearchRad; b<=ijk[1]+mySearchRad; b++){
+                        for(int c=ijk[2]-mySearchRad; c<=ijk[2]+mySearchRad; c++){
+                            unsigned char* q = static_cast<unsigned char*>(breast->GetScalarPointer(a,b,c));
+                            if(q[0] == tissue.bg){
+                                // check distance
+                                double skinDist = imgRes*sqrt(static_cast<double>((a-ijk[0])*(a-ijk[0])+(b-ijk[1])*(b-ijk[1])+(c-ijk[2])*(c-ijk[2])));
+                                if(skinDist <= mySkinThick){
+                                    #pragma omp atomic write
+                                    q[0] = tissue.skin;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         p[0] = innerVal;
     }
 
     // calculate inner volume and correct border errors
-#pragma omp parallel for reduction(+:breastVoxVol)
+    #pragma omp parallel for reduction(+:breastVoxVol)
     for(int i=0; i<dim[0]; i++){
         int ijk[3];
         ijk[0] = i;
         for(int j=0; j<dim[1]; j++){
             ijk[1] = j;
             for(int k=0; k<dim[2]; k++){
-    ijk[2] = k;
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(ijk));
-    if(p[0] == innerVal){
-        breastVoxVol += 1;
-    } else {
-        if(p[0] == boundVal){
-            p[0] = innerVal;
-            breastVoxVol += 1;
-        }
-    }
+                ijk[2] = k;
+                auto p = static_cast<unsigned char*>(breast->GetScalarPointer(ijk));
+                if(p[0] == innerVal){
+                    breastVoxVol += 1;
+                } else if(p[0] == boundVal) {
+                    p[0] = innerVal;
+                    breastVoxVol += 1;
+                }
             }
         }
     }
 
-    double breastVol = (double)breastVoxVol*pow(imgRes,3.0);
+    const double breastVol = breastVoxVol * pow(imgRes,3.0);
 
     // spdlog::info("Breast volume: {} cc ({} voxels)", breastVol/1000, breastVoxVol);
 
@@ -2310,75 +2249,57 @@ static int run_with_config(const po::variables_map& vm) {
 
     double searchRad = sqrt(2*nippleRad*nippleRad+nippleLen*nippleLen);
 
-    int searchSpace[6];	// search region for nipple
-    searchSpace[0] = nippleVoxel[0] - (int)ceil(searchRad/spacing[0]);
-    if(searchSpace[0] < breastExtent[0]){
-        searchSpace[0] = breastExtent[0];
-    }
-    searchSpace[1] = nippleVoxel[0] + (int)ceil(searchRad/spacing[0]);
-    if(searchSpace[1] > breastExtent[1]){
-        searchSpace[1] = breastExtent[1];
-    }
-    searchSpace[2] = nippleVoxel[1] - (int)ceil(searchRad/spacing[1]);
-    if(searchSpace[2] < breastExtent[2]){
-        searchSpace[2] = breastExtent[2];
-    }
-    searchSpace[3] = nippleVoxel[1] + (int)ceil(searchRad/spacing[1]);
-    if(searchSpace[3] > breastExtent[3]){
-        searchSpace[3] = breastExtent[3];
-    }
-    searchSpace[4] = nippleVoxel[2] - (int)ceil(searchRad/spacing[2]);
-    if(searchSpace[4] < breastExtent[4]){
-        searchSpace[4] = breastExtent[4];
-    }
-    searchSpace[5] = nippleVoxel[2] + (int)ceil(searchRad/spacing[2]);
-    if(searchSpace[5] > breastExtent[5]){
-        searchSpace[5] = breastExtent[5];
-    }
+    const int searchSpace[6] = {
+        std::max(breastExtent[0], nippleVoxel[0/2] - (int)ceil(searchRad/spacing[0/2])),
+        std::max(breastExtent[1], nippleVoxel[1/2] - (int)ceil(searchRad/spacing[1/2])),
+        std::max(breastExtent[2], nippleVoxel[2/2] - (int)ceil(searchRad/spacing[2/2])),
+        std::max(breastExtent[3], nippleVoxel[3/2] - (int)ceil(searchRad/spacing[3/2])),
+        std::max(breastExtent[4], nippleVoxel[4/2] - (int)ceil(searchRad/spacing[4/2])),
+        std::max(breastExtent[5], nippleVoxel[5/2] - (int)ceil(searchRad/spacing[5/2])),
+    };
 
-#pragma omp parallel for
+    #pragma omp parallel for
     for(int i=searchSpace[0]; i<= searchSpace[1]; i++){
         for(int j=searchSpace[2]; j<= searchSpace[3]; j++){
             for(int k=searchSpace[4]; k<= searchSpace[5]; k++){
-    // search cube, project onto normal and check if in nipple bound
-    // only if outside breast interior
-    unsigned char* q =
-        static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-    if(q[0] != innerVal){ // not in interior
-        // get id for point
-        vtkIdType id;
-        int coord[3];
-        coord[0] = i;
-        coord[1] = j;
-        coord[2] = k;
-        id = breast->ComputePointId(coord);
-        // get spatial coordinates of point
-        double pos[3];
-        breast->GetPoint(id,pos);
-        // compute distance to nipple line and length along line
-        double dist=0.0;
-        double len=0.0;
-        // project onto nipple line
-        for(int m=0; m<3; m++){
-            len += nippleNorm[m]*(pos[m]-nipplePos[m]);
-        }
-        // distance from nipple line
-        for(int m=0; m<3; m++){
-            dist += (pos[m]-nipplePos[m]-len*nippleNorm[m])*(pos[m]-nipplePos[m]-len*nippleNorm[m]);
-        }
-        dist = sqrt(dist);
+                // search cube, project onto normal and check if in nipple bound
+                // only if outside breast interior
+                auto q = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                if(q[0] != innerVal){ // not in interior
+                    // get id for point
+                    vtkIdType id;
+                    int coord[3];
+                    coord[0] = i;
+                    coord[1] = j;
+                    coord[2] = k;
+                    id = breast->ComputePointId(coord);
+                    // get spatial coordinates of point
+                    double pos[3];
+                    breast->GetPoint(id,pos);
+                    // compute distance to nipple line and length along line
+                    double dist=0.0;
+                    double len=0.0;
+                    // project onto nipple line
+                    for(int m=0; m<3; m++){
+                        len += nippleNorm[m]*(pos[m]-nipplePos[m]);
+                    }
+                    // distance from nipple line
+                    for(int m=0; m<3; m++){
+                        dist += (pos[m]-nipplePos[m]-len*nippleNorm[m])*(pos[m]-nipplePos[m]-len*nippleNorm[m]);
+                    }
+                    dist = sqrt(dist);
 
-        if(pow(dist/nippleRad,nippleShape)+pow(fabs(len)/nippleLen,nippleShape) <= 1.0){
-            q[0] = tissue.nipple;
-        }
-    }
+                    if(pow(dist/nippleRad,nippleShape)+pow(fabs(len)/nippleLen,nippleShape) <= 1.0){
+                        q[0] = tissue.nipple;
+                    }
+                }
             }
         }
     }
 
     // add chest muscle
 
-#pragma omp parallel for
+    #pragma omp parallel for
     for(int j=0; j<dim[1]; j++){
 
         int muscleThick;
@@ -2391,11 +2312,10 @@ static int run_with_config(const po::variables_map& vm) {
 
         for(int k=0; k<dim[2]; k++){
             for(int i=0; i<=muscleThick; i++){
-    unsigned char* p =
-        static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-    if(p[0] == innerVal){
-        p[0] = tissue.muscle;
-    }
+                auto p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                if(p[0] == innerVal){
+                    p[0] = tissue.muscle;
+                }
             }
         }
     }
@@ -2405,66 +2325,69 @@ static int run_with_config(const po::variables_map& vm) {
     ***********************/
 
     // breast segmentation into compartments and lipid buffer zone
-
-    int numBreastCompartments = vm["compartments.num"].as<int>();
-
-    int numAngles = numBreastCompartments;
-
-    double seedBaseDist = vm["compartments.seedBaseDist"].as<double>();	// distance along nipple line of seed base
+    const unsigned numBreastCompartments = vm["compartments.num"].as<unsigned>();
+    const unsigned numAngles = numBreastCompartments;
+    const double seedBaseDist = vm["compartments.seedBaseDist"].as<double>();	// distance along nipple line of seed base
 
     // pick backplane seed points on this plane
-    int numBackSeeds = vm["compartments.numBackSeeds"].as<int>();	// number of backplane seed points
-    int numSkinSeeds = 250;
+    const unsigned numBackSeeds = vm["compartments.numBackSeeds"].as<unsigned>();	// number of backplane seed points
+    const unsigned numSkinSeeds = 250;
 
-    double angularJitter = 2*pi*numAngles*vm["compartments.angularJitter"].as<double>();
+    const double angularJitter = 2 * pi * numAngles * vm["compartments.angularJitter"].as<double>();
     // max angular jitter for seed placement
-    double zJitter = vm["compartments.zJitter"].as<double>();	// jitter in z direction
-    double maxFracRadialDist = vm["compartments.maxFracRadialDist"].as<double>();
+    const double zJitter = vm["compartments.zJitter"].as<double>();	// jitter in z direction
+    const double maxFracRadialDist = vm["compartments.maxFracRadialDist"].as<double>();
     // minimum and maximum radial distance from baseSeed as fraction of distance to breast surface
-    double minFracRadialDist = vm["compartments.minFracRadialDist"].as<double>();
+    const double minFracRadialDist = vm["compartments.minFracRadialDist"].as<double>();
 
-    double scaleMin[3];  // scaling for gland compartments
-    scaleMin[0] = vm["compartments.minScaleNippleDir"].as<double>();
-    scaleMin[1] = vm["compartments.minScale"].as<double>();
-    scaleMin[2] = vm["compartments.minScale"].as<double>();
+    // scaling for gland compartments
+    const double scaleMin[3] = {
+        vm["compartments.minScaleNippleDir"].as<double>(),
+        vm["compartments.minScale"].as<double>(),
+        vm["compartments.minScale"].as<double>(),
+    };
+    // 1st dimension principally points toward nipple - gland seeds
+    const double scaleMax[3] = {
+        vm["compartments.maxScaleNippleDir"].as<double>(),
+        vm["compartments.maxScale"].as<double>(),
+        vm["compartments.maxScale"].as<double>(),
+    };
 
-    double scaleMax[3];	// 1st dimension principally points toward nipple - gland seeds
-    scaleMax[0] = vm["compartments.maxScaleNippleDir"].as<double>();
-    scaleMax[1] = vm["compartments.maxScale"].as<double>();
-    scaleMax[2] = vm["compartments.maxScale"].as<double>();
-
-    double gMin = vm["compartments.minGlandStrength"].as<double>();	// strength of gland compartments
-    double gMax = vm["compartments.maxGlandStrength"].as<double>();
-    double deflectMax = pi*vm["compartments.maxDeflect"].as<double>();
+    // strength of gland compartments
+    const double gMin = vm["compartments.minGlandStrength"].as<double>();
+    const double gMax = vm["compartments.maxGlandStrength"].as<double>();
+    const double deflectMax = pi * vm["compartments.maxDeflect"].as<double>();
     // maximum deflection angle from pointing towards nipple (gland compartments)
 
     // backplane, nipple are spherical weighting
     // skin orients towards nipple
-    double scaleSkinMin[3];
-    scaleSkinMin[0] = vm["compartments.minSkinScaleNippleDir"].as<double>();
-    scaleSkinMin[1] = vm["compartments.minSkinScale"].as<double>();
-    scaleSkinMin[2] = vm["compartments.minSkinScale"].as<double>();
-    double scaleSkinMax[3];
-    scaleSkinMax[0] = vm["compartments.maxSkinScaleNippleDir"].as<double>();
-    scaleSkinMax[1] = vm["compartments.maxSkinScale"].as<double>();
-    scaleSkinMax[2] = vm["compartments.maxSkinScale"].as<double>();
+    const double scaleSkinMin[3] = {
+        vm["compartments.minSkinScaleNippleDir"].as<double>(),
+        vm["compartments.minSkinScale"].as<double>(),
+        vm["compartments.minSkinScale"].as<double>(),
+    };
+    const double scaleSkinMax[3] = {
+        vm["compartments.maxSkinScaleNippleDir"].as<double>(),
+        vm["compartments.maxSkinScale"].as<double>(),
+        vm["compartments.maxSkinScale"].as<double>(),
+    };
 
-    double gSkin = vm["compartments.skinStrength"].as<double>();
+    const double gSkin = vm["compartments.skinStrength"].as<double>();
 
-    double scaleBack = vm["compartments.backScale"].as<double>();
-    double gBack = vm["compartments.backStrength"].as<double>();
+    const double scaleBack = vm["compartments.backScale"].as<double>();
+    const double gBack = vm["compartments.backStrength"].as<double>();
 
-    double scaleNipple = vm["compartments.nippleScale"].as<double>();
-    double gNipple = vm["compartments.nippleStrength"].as<double>();
+    const double scaleNipple = vm["compartments.nippleScale"].as<double>();
+    const double gNipple = vm["compartments.nippleStrength"].as<double>();
 
-    double ligDistThresh = 12.0;
+    const double ligDistThresh = 12.0;
 
     // radius of fat seeds to check for segmentation
-    double compSeedRadius = vm["compartments.voronSeedRadius"].as<double>();
+    const double compSeedRadius = vm["compartments.voronSeedRadius"].as<double>();
+    // total number of fat seed points
+    const unsigned numFatSeeds = numAngles + numBackSeeds + numSkinSeeds;
 
-    int numFatSeeds = numAngles + numBackSeeds + numSkinSeeds;  // total number of fat seed points
-
-    typedef struct breastComp{
+    typedef struct breastComp {
         // data structure for breast compartment
         double scale[3]; // size
         double g;	// size weight
@@ -2479,15 +2402,14 @@ static int run_with_config(const po::variables_map& vm) {
     } breastComp;
 
     // memory allocation
-    breastComp *glandCompartments = (breastComp*)malloc((numBreastCompartments+1)*sizeof(breastComp));
-    breastComp *fatCompartments = (breastComp*)malloc(numFatSeeds*sizeof(breastComp));
+    auto glandCompartments = std::vector<breastComp>(numBreastCompartments + 1);
+    auto fatCompartments = std::vector<breastComp>(numFatSeeds);
 
     // breast dimensions for initializing bounding box
     int breastDim[3];
     breast->GetDimensions(breastDim);
 
-    vtkSmartPointer<vtkPoints> seeds =
-        vtkSmartPointer<vtkPoints>::New();
+    auto seeds = vtkSmartPointer<vtkPoints>::New();
 
     // base of spokes for seed placement
     double seedBase[3];
@@ -2495,7 +2417,7 @@ static int run_with_config(const po::variables_map& vm) {
     vtkVector3d baseAxis[3];
 
     // set seed base location and specify first coordinate vector
-    for(int i=0; i<3; i++){
+    for (unsigned i = 0; i < 3; i++) {
         seedBase[i] = nipplePos[i]-seedBaseDist*nippleNorm[i];
         baseAxis[0][i] = -1.0*nippleNorm[i];
     }
@@ -2503,8 +2425,8 @@ static int run_with_config(const po::variables_map& vm) {
     // check seed base within breast
     int coords[3];	// coordinates of nipple seed base
     double pcoords[3]; // parametric coordinates
-    breast->ComputeStructuredCoordinates(seedBase,coords,pcoords);
-    unsigned char* base = static_cast<unsigned char*>(breast->GetScalarPointer(coords));
+    breast->ComputeStructuredCoordinates(seedBase, coords, pcoords);
+    const auto base = static_cast<const unsigned char*>(breast->GetScalarPointer(coords));
     if (base[0] != innerVal) {
         // outside breast error
         spdlog::critical("Breast compartment seed base outside breast volume");
@@ -2514,14 +2436,11 @@ static int run_with_config(const po::variables_map& vm) {
     // construct other coordinate vectors
 
     // second coordinate vector based on Gram-Schmidt using (0,1,0)
-    vtkVector3d v2;
-    v2[0] = seedBase[0];
-    v2[1] = seedBase[1] - 1.0;
-    v2[2] = seedBase[2];
-    double innerProd = v2.Dot(baseAxis[0]);
+    const auto v2 = vtkVector3d(seedBase[0], seedBase[1] - 1.0, seedBase[2]);
+    const double innerProd = v2.Dot(baseAxis[0]);
 
-    for(int i=0; i<3; i++){
-        baseAxis[1][i] = v2[i] - innerProd*baseAxis[0][i];
+    for (unsigned i = 0; i < 3; i++) {
+        baseAxis[1][i] = v2[i] - innerProd * baseAxis[0][i];
     }
     // normalize
     baseAxis[1].Normalize();
@@ -2533,24 +2452,25 @@ static int run_with_config(const po::variables_map& vm) {
          shoot rays toward breast surface and determine compartment seed locations
          and breast surface seed points */
 
-    double rayLength = 500.0;	// some large value to guarantee being outside of breast
+    // some large value to guarantee being outside of breast
+    const double rayLength = 500.0;
 
-    for(int i=0; i<numAngles; i++){
+    for (unsigned i = 0; i < numAngles; i++) {
         double theta = (double)i*2*pi/(double)numAngles;
 
         // add theta jitter
-        theta = theta + rgen->GetRangeValue(-1.0*angularJitter,angularJitter);
+        theta += rgen->GetRangeValue(-1.0*angularJitter, angularJitter);
         rgen->Next();
 
         vtkVector3d rayDir;
         double lineEnd[3];
-        for(int j=0; j<3; j++){
-            rayDir[j] = cos(theta)*baseAxis[1][j]+sin(theta)*baseAxis[2][j];
-            lineEnd[j] = seedBase[j]+rayLength*rayDir[j];
+        for (unsigned j=0; j < 3; j++) {
+            rayDir[j] = cos(theta) * baseAxis[1][j] + sin(theta) * baseAxis[2][j];
+            lineEnd[j] = seedBase[j] + rayLength * rayDir[j];
         }
 
         // intersection variables
-        double tol = 0.005;
+        const double tol = 0.005;
         double tval; // not sure what this is for
         vtkIdType intersectCell;
         int subId;  // probably don't need this
@@ -2558,22 +2478,21 @@ static int run_with_config(const po::variables_map& vm) {
         double intersect[3]; // output position
         double pcoords[3];
 
-        vtkSmartPointer<vtkCellLocator> innerLocator =
-            vtkSmartPointer<vtkCellLocator>::New();
+        auto innerLocator = vtkSmartPointer<vtkCellLocator>::New();
         innerLocator->SetDataSet(innerPoly);
         innerLocator->BuildLocator();
 
-        if(innerLocator->IntersectWithLine(seedBase, lineEnd, tol,
-                             tval, intersect, pcoords, subId, intersectCell)){
-
+        const int intersectionPoint = innerLocator->IntersectWithLine(
+            seedBase, lineEnd, tol, tval, intersect, pcoords, subId, intersectCell);
+        if (intersectionPoint != 0) {
             // the breast surface seed point is intersect
             seeds->InsertNextPoint(intersect);
 
             // add fat seed to structure
-            for(int j=0; j<3; j++){
-    fatCompartments[i].pos[j] = intersect[j];
-    fatCompartments[i].scale[j] = rgen->GetRangeValue(scaleSkinMin[j],scaleSkinMax[j]);
-    rgen->Next();
+            for (unsigned j = 0; j < 3; j++) {
+                fatCompartments[i].pos[j] = intersect[j];
+                fatCompartments[i].scale[j] = rgen->GetRangeValue(scaleSkinMin[j],scaleSkinMax[j]);
+                rgen->Next();
             }
             fatCompartments[i].g = gSkin;
             fatCompartments[i].fat = true;
@@ -2590,21 +2509,18 @@ static int run_with_config(const po::variables_map& vm) {
 
             // principle unit vector oriented towards nipple
             // first vector
-            for(int j=0; j<3; j++){
-    fatCompartments[i].axis[0][j] = nipplePos[j] - intersect[j];
+            for (unsigned j = 0; j < 3; j++) {
+                fatCompartments[i].axis[0][j] = nipplePos[j] - intersect[j];
             }
             // normalize
             fatCompartments[i].axis[0].Normalize();
 
             // calculate second vector based on direction to coordinate origin
-            vtkVector3d v2;
-            for(int j=0; j<3; j++){
-    v2[j] = intersect[j];
-            }
+            auto v2 = vtkVector3d(intersect[0], intersect[1], intersect[2]);
             double innerProd = v2.Dot(fatCompartments[i].axis[0]);
 
-            for(int j=0; j<3; j++){
-    fatCompartments[i].axis[1][j] = v2[j] - innerProd*fatCompartments[i].axis[0][j];
+            for (unsigned j=0; j<3; j++) {
+                fatCompartments[i].axis[1][j] = v2[j] - innerProd*fatCompartments[i].axis[0][j];
             }
             // normalize
             fatCompartments[i].axis[1].Normalize();
@@ -2614,32 +2530,31 @@ static int run_with_config(const po::variables_map& vm) {
 
             // find gland compartment seed point
 
-            double skinDist = sqrt(vtkMath::Distance2BetweenPoints(seedBase,intersect));
-            double seedDist = skinDist*rgen->GetRangeValue(minFracRadialDist,
-                                 maxFracRadialDist);
+            const double skinDist = sqrt(vtkMath::Distance2BetweenPoints(seedBase,intersect));
+            const double seedDist = skinDist * rgen->GetRangeValue(minFracRadialDist, maxFracRadialDist);
             rgen->Next();
 
             double seedPos[3];
-            for(int j=0; j<3; j++){
-    seedPos[j] = seedBase[j]+seedDist*rayDir[j];
+            for (unsigned j = 0; j < 3; j++) {
+                seedPos[j] = seedBase[j]+seedDist*rayDir[j];
             }
 
             // add z jitter
 
-            double zjit = rgen->GetRangeValue(-1.0*zJitter, 1.0*zJitter);
+            const double zjit = rgen->GetRangeValue(-1.0*zJitter, 1.0*zJitter);
             rgen->Next();
 
-            for(int j=0; j<3; j++){
-    seedPos[j] = seedPos[j]+zjit*baseAxis[0][j];
+            for (unsigned j = 0; j < 3; j++){
+                seedPos[j] = seedPos[j]+zjit*baseAxis[0][j];
             }
 
             //seeds->InsertNextPoint(seedPos);
 
             // add to gland structure
-            for(int j=0; j<3; j++){
-    glandCompartments[i].pos[j] = seedPos[j];
-    glandCompartments[i].scale[j] = rgen->GetRangeValue(scaleMin[j],scaleMax[j]);
-    rgen->Next();
+            for (unsigned j = 0; j < 3; j++) {
+                glandCompartments[i].pos[j] = seedPos[j];
+                glandCompartments[i].scale[j] = rgen->GetRangeValue(scaleMin[j], scaleMax[j]);
+                rgen->Next();
             }
 
             glandCompartments[i].g = rgen->GetRangeValue(gMin,gMax);
@@ -2658,50 +2573,50 @@ static int run_with_config(const po::variables_map& vm) {
 
             // coordinate system
             // first vector
-            for(int j=0; j<3; j++){
-    glandCompartments[i].axis[0][j] = nipplePos[j] - seedPos[j];
+            for (unsigned j = 0; j < 3; j++) {
+                glandCompartments[i].axis[0][j] = nipplePos[j] - seedPos[j];
             }
             // normalize
             glandCompartments[i].axis[0].Normalize();
 
             // calculate second vector based on direction to coordinate origin
-            for(int j=0; j<3; j++){
-    v2[j] = seedPos[j];
+            for (unsigned j = 0; j < 3; j++){
+                v2[j] = seedPos[j];
             }
             innerProd = v2.Dot(glandCompartments[i].axis[0]);
 
-            for(int j=0; j<3; j++){
-    glandCompartments[i].axis[1][j] = v2[j] - innerProd*glandCompartments[i].axis[0][j];
+            for (unsigned j = 0; j < 3; j++) {
+                glandCompartments[i].axis[1][j] = v2[j] - innerProd*glandCompartments[i].axis[0][j];
             }
             // normalize
             glandCompartments[i].axis[1].Normalize();
-
             // calculate 3rd vector based on cross product
             glandCompartments[i].axis[2] = glandCompartments[i].axis[0].Cross(glandCompartments[i].axis[1]);
 
             // have 3 unit vectors
             // rotate randomly about principle direction (to nipple)
-            double dtheta = rgen->GetRangeValue(0,2*pi);
+            const double dtheta = rgen->GetRangeValue(0, 2 * pi);
             rgen->Next();
-            double dphi = rgen->GetRangeValue(0,deflectMax);
+            const double dphi = rgen->GetRangeValue(0, deflectMax);
             rgen->Next();
-            double dr = tan(pi*dphi);
+            const double dr = tan(pi * dphi);
 
-            for(int j=0; j<3; j++){
-    glandCompartments[i].axis[0][j] = nipplePos[j] - seedPos[j] + dr*cos(dtheta)*glandCompartments[i].axis[1][j] +
-        dr*sin(dtheta)*glandCompartments[i].axis[2][j];
+            for (unsigned j = 0; j < 3; j++){
+                glandCompartments[i].axis[0][j] = nipplePos[j] - seedPos[j]
+                    + dr * cos(dtheta) * glandCompartments[i].axis[1][j]
+                    + dr * sin(dtheta) * glandCompartments[i].axis[2][j];
             }
             // normalize
             glandCompartments[i].axis[0].Normalize();
 
             // re-calculate second vector based on direction to coordinate origin and updated principle direction
-            for(int j=0; j<3; j++){
-    v2[j] = seedPos[j];
+            for (unsigned j = 0; j < 3; j++) {
+                v2[j] = seedPos[j];
             }
             innerProd = v2.Dot(glandCompartments[i].axis[0]);
 
-            for(int j=0; j<3; j++){
-    glandCompartments[i].axis[1][j] = v2[j] - innerProd*glandCompartments[i].axis[0][j];
+            for (unsigned j = 0; j < 3; j++) {
+                glandCompartments[i].axis[1][j] = v2[j] - innerProd*glandCompartments[i].axis[0][j];
             }
             // normalize
             glandCompartments[i].axis[1].Normalize();
@@ -2717,10 +2632,8 @@ static int run_with_config(const po::variables_map& vm) {
         }
     }
 
-    double nipSc[3] = {20, 1.0, 1.0};
-
     // add nipple seed to gland structure
-    for(int j=0; j<3; j++){
+    for (unsigned j = 0; j < 3; j++) {
         glandCompartments[numBreastCompartments].pos[j] = nipplePos[j];
         glandCompartments[numBreastCompartments].scale[j] = scaleNipple;
     }
@@ -2738,54 +2651,52 @@ static int run_with_config(const po::variables_map& vm) {
     glandCompartments[numBreastCompartments].boundBox[5] = -1;
 
     // first axis is nipple direction
-    for(int k=0; k<3; k++){
+    for (unsigned k = 0; k < 3; k++) {
         glandCompartments[numBreastCompartments].axis[0][k] = nippleNorm[k];
     }
 
     // others are random
-    vtkMath::Perpendiculars(glandCompartments[numBreastCompartments].axis[0].GetData(),
-                glandCompartments[numBreastCompartments].axis[1].GetData(),
-                glandCompartments[numBreastCompartments].axis[2].GetData(),
-                rgen->GetRangeValue(0, 2*pi));
+    vtkMath::Perpendiculars(
+        glandCompartments[numBreastCompartments].axis[0].GetData(),
+        glandCompartments[numBreastCompartments].axis[1].GetData(),
+        glandCompartments[numBreastCompartments].axis[2].GetData(),
+        rgen->GetRangeValue(0, 2*pi)
+    );
     rgen->Next();
 
     // add backplane seed points
     // random points on backplane
     // backplane just above muscle layer
-    double backPlanePos = 0.0 + spacing[0];
-    int backPlaneInd = static_cast<int>(ceil((backPlanePos-origin[0])/spacing[0]));
+    const double backPlanePos = 0.0 + spacing[0];
+    const int backPlaneInd = static_cast<int>(ceil((backPlanePos-origin[0]) / spacing[0]));
 
-    for(int i=0; i<numBackSeeds; i++){
+    for (unsigned i = 0; i < numBackSeeds; i++) {
         bool foundSeed = false;
-        double y,z;
-        while(!foundSeed){
+        double y, z;
+        while (!foundSeed) {
             // pick random location on backplane away from edge of voxel space
-            y = rgen->GetRangeValue(baseBound[2]+2*spacing[1],baseBound[3]-2*spacing[1]);
+            y = rgen->GetRangeValue(baseBound[2]+2*spacing[1], baseBound[3]-2*spacing[1]);
             rgen->Next();
-            z = rgen->GetRangeValue(baseBound[4]+2*spacing[2],baseBound[5]-2*spacing[2]);
+            z = rgen->GetRangeValue(baseBound[4]+2*spacing[2], baseBound[5]-2*spacing[2]);
             rgen->Next();
 
             // find nearest voxel and test if in breast interior
-            int yInd = static_cast<int>(floor((y-origin[1])/spacing[1]));
-            int zInd = static_cast<int>(floor((z-origin[2])/spacing[2]));
+            const int yInd = static_cast<int>(floor((y-origin[1]) / spacing[1]));
+            const int zInd = static_cast<int>(floor((z-origin[2]) / spacing[2]));
 
-            unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(backPlaneInd,yInd,zInd));
-            if(p[0] == innerVal){
-    // found a new seed point
-    foundSeed = true;
+            unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(backPlaneInd, yInd, zInd));
+            if (p[0] == innerVal) {
+                // found a new seed point
+                foundSeed = true;
             }
         }
 
         // add new seed point
-        double backSeed[3];
-        backSeed[0] = backPlanePos;
-        backSeed[1] = y;
-        backSeed[2] = z;
-
+        const double backSeed[3] = { backPlanePos, y, z };
         seeds->InsertNextPoint(backSeed);
 
         // add to structure
-        for(int j=0; j<3; j++){
+        for (unsigned j = 0; j < 3; j++) {
             fatCompartments[numAngles+i].pos[j] = backSeed[j];
             fatCompartments[numAngles+i].scale[j] = scaleBack;
         }
@@ -2803,9 +2714,9 @@ static int run_with_config(const po::variables_map& vm) {
         fatCompartments[numAngles+i].boundBox[5] = -1;
 
         // unit vectors are standard
-        for(int j=0; j<3; j++){
-            for(int k=0; k<3; k++){
-    fatCompartments[numAngles+i].axis[j][k] = 0.0;
+        for (unsigned j = 0; j < 3; j++) {
+            for (unsigned k = 0; k < 3; k++) {
+                fatCompartments[numAngles+i].axis[j][k] = 0.0;
             }
         }
         fatCompartments[numAngles+i].axis[0][0] = 1.0;
@@ -2815,26 +2726,26 @@ static int run_with_config(const po::variables_map& vm) {
     // finished adding backplane seed points
 
     // random skin seed points
-    for(int i=0; i<numSkinSeeds; i++){
+    for (unsigned i = 0; i < numSkinSeeds; i++) {
         bool foundSeed = false;
         vtkIdType numPts = innerPoly->GetNumberOfPoints();
         double seedCoords[3];
-        while(!foundSeed){
+        while (!foundSeed) {
             // pick random breast surface point
-            vtkIdType tryId = static_cast<vtkIdType>(ceil(rgen->GetRangeValue(0, numPts-1)));
+            const auto tryId = static_cast<vtkIdType>(ceil(rgen->GetRangeValue(0, numPts-1)));
             rgen->Next();
             innerPoly->GetPoint(tryId, seedCoords);
 
             // select point if not to close to backplane or nipple
-            if(seedCoords[0] > backPlanePos + 10.0 && seedCoords[0] < nipplePos[0] - 10.0){
-    foundSeed = true;
+            if (seedCoords[0] > backPlanePos + 10.0 && seedCoords[0] < nipplePos[0] - 10.0) {
+                foundSeed = true;
             }
         }
 
         seeds->InsertNextPoint(seedCoords);
 
         // add to structure
-        for(int j=0; j<3; j++){
+        for (unsigned j = 0; j < 3; j++) {
             fatCompartments[numAngles+numBackSeeds+i].pos[j] = seedCoords[j];
             fatCompartments[numAngles+numBackSeeds+i].scale[j] = rgen->GetRangeValue(scaleSkinMin[j],scaleSkinMax[j]);
             rgen->Next();
@@ -2857,33 +2768,34 @@ static int run_with_config(const po::variables_map& vm) {
         fatCompartments[numAngles+numBackSeeds+i].axis[0].Normalize();
 
         // other directions random
-        vtkMath::Perpendiculars(fatCompartments[numAngles+numBackSeeds+i].axis[0].GetData(),
-                    fatCompartments[numAngles+numBackSeeds+i].axis[1].GetData(), fatCompartments[numAngles+numBackSeeds+i].axis[2].GetData(),
-                    rgen->GetRangeValue(0, 2*pi));
+        vtkMath::Perpendiculars(
+            fatCompartments[numAngles+numBackSeeds+i].axis[0].GetData(),
+            fatCompartments[numAngles+numBackSeeds+i].axis[1].GetData(),
+            fatCompartments[numAngles+numBackSeeds+i].axis[2].GetData(),
+            rgen->GetRangeValue(0, 2*pi)
+        );
         rgen->Next();
     }
 
     // create Perlin noise distance function for glandular compartments
-    perlinNoise *boundary = static_cast<perlinNoise*>(::operator new(sizeof(perlinNoise)*(numBreastCompartments+1)));
 
-    for(int i=0; i<=numBreastCompartments; i++){
-        new(&boundary[i]) perlinNoise(vm, (int32_t)rgen->GetRangeValue(-1073741824, 1073741824),"boundary");
+    auto boundary = std::vector<perlinNoise>();
+    boundary.reserve(numBreastCompartments + 1);
+
+    for (unsigned i = 0; i <= numBreastCompartments; i++) {
+        const int32_t inSeed = rgen->GetRangeValue(-1073741824, 1073741824);
+        boundary.emplace_back(perlinNoise(vm, inSeed, "boundary"));
         rgen->Next();
     }
 
     // setup point locator
-    vtkSmartPointer<vtkOctreePointLocator> findSeed =
-        vtkSmartPointer<vtkOctreePointLocator>::New();
-
+    auto findSeed = vtkSmartPointer<vtkOctreePointLocator>::New();
     // create a vtkPolyData
-    vtkSmartPointer<vtkPolyData> seedSet =
-        vtkSmartPointer<vtkPolyData>::New();
+    auto seedSet = vtkSmartPointer<vtkPolyData>::New();
     seedSet->SetPoints(seeds);
 
     // add verticies
-    vtkSmartPointer<vtkVertexGlyphFilter> vertexGlyphFilter2 =
-        vtkSmartPointer<vtkVertexGlyphFilter>::New();
-
+    auto vertexGlyphFilter2 = vtkSmartPointer<vtkVertexGlyphFilter>::New();
     vertexGlyphFilter2->AddInputData(seedSet);
     vertexGlyphFilter2->Update();
 
@@ -2893,166 +2805,160 @@ static int run_with_config(const po::variables_map& vm) {
     // iterate over voxels to do segmentation
 
     // starting by setting everything behind back plane to fat
-#pragma omp parallel for
-    for(int i=0; i<backPlaneInd; i++){
-        for(int j=0; j<dim[1]; j++){
-            for(int k=0; k<dim[2]; k++){
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-    if(p[0] == innerVal){
-        // set to fat
-        p[0] = ufat;
-    }
-            }
-        }
-    }
-
-    double boundaryDev = vm["boundary.maxDeviation"].as<double>();
-
-    // resolution of Voronoi segmentation
-    double segSize = 0.2;
-
-    int voxSkip = static_cast<int>(floor(segSize/imgRes));
-
-    if(voxSkip < 1){
-        voxSkip = 1;
-    }
-
-    // other side of back plane, do segmentation
-#pragma omp parallel for schedule(static,1)
-    for(int i=backPlaneInd; i<=dim[0]-voxSkip; i+=voxSkip){
-        double coords[3];
-        coords[0] = originCoords[0] + imgRes*i;
-        for(int j=0; j<=dim[1]-voxSkip; j+=voxSkip){
-            coords[1] = originCoords[1] + imgRes*j;
-            for(int k=0; k<=dim[2]-voxSkip; k+=voxSkip){
-
-    bool doSeg = false;
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-
-    if(p[0] == innerVal){
-        doSeg = true;
-    } else {
-        // check other voxels in supervoxel
-        for(int a=0; a<voxSkip; a++){
-            for(int b=0; b<voxSkip; b++){
-                for(int c=0; c<voxSkip; c++){
-        p = static_cast<unsigned char*>(breast->GetScalarPointer(i+a,j+b,k+c));
-        if(p[0] == innerVal){
-            doSeg = true;
-        }
+    #pragma omp parallel for
+    for (unsigned i = 0; i < backPlaneInd; i++) {
+        for (unsigned j = 0; j < dim[1]; j++) {
+            for (unsigned k = 0; k < dim[2]; k++) {
+                auto p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                if (p[0] == innerVal) {
+                    // set to fat
+                    p[0] = ufat;
                 }
             }
         }
     }
-    if(doSeg){
-        // found voxel to segment
 
-        // find coordinates
-        coords[2] = originCoords[2] + imgRes*k;
+    const double boundaryDev = vm["boundary.maxDeviation"].as<double>();
+    // resolution of Voronoi segmentation
+    const double segSize = 0.2;
 
-        // nearest fat points
-        vtkSmartPointer<vtkIdList> nearPts =
-            vtkSmartPointer<vtkIdList>::New();
+    const int voxSkip = std::max((int) floor(segSize / imgRes), 1);
 
-        findSeed->FindPointsWithinRadius(compSeedRadius, coords, nearPts);
+    // other side of back plane, do segmentation
+    #pragma omp parallel for schedule (static, 1)
+    for (int i = backPlaneInd; i <= dim[0] - voxSkip; i += voxSkip){
+        double coords[3];
+        coords[0] = originCoords[0] + imgRes*i;
+        for (int j = 0; j <= dim[1] - voxSkip; j += voxSkip) {
+            coords[1] = originCoords[1] + imgRes*j;
+            for (int k = 0; k <= dim[2] - voxSkip; k +=voxSkip ) {
+                bool doSeg = false;
+                auto p = static_cast<unsigned char *>(breast->GetScalarPointer(i,j,k));
 
-        // find minimum distance
-        // starting with the first
-        vtkIdType id = nearPts->GetId(0);
+                if (p[0] == innerVal) {
+                    doSeg = true;
+                } else {
+                    // check other voxels in supervoxel
+                    for (int a = 0; a < voxSkip; a++) {
+                        for (int b = 0; b < voxSkip; b++) {
+                            for (int c = 0; c < voxSkip; c++) {
+                                p = static_cast<unsigned char*>(breast->GetScalarPointer(i+a,j+b,k+c));
+                                if (p[0] == innerVal) {
+                                    doSeg = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                if (doSeg) {
+                    // found voxel to segment
 
-        // compute position in local coordinate system
-        vtkVector3d rvec;
-        vtkVector3d localCoords;
-        for(int m=0; m<3; m++){
-            rvec[m] = coords[m]-fatCompartments[id].pos[m];
-        }
-        for(int m=0; m<3; m++){
-            localCoords[m] = rvec.Dot(fatCompartments[id].axis[m]);
-        }
+                    // find coordinates
+                    coords[2] = originCoords[2] + imgRes*k;
 
-        // compute distance function
-        double minDist = 0.0;
-        double nextMinDist = 0.0;
+                    // nearest fat points
+                    vtkSmartPointer<vtkIdList> nearPts =
+                        vtkSmartPointer<vtkIdList>::New();
 
-        for(int m=0; m<3; m++){
-            minDist += fatCompartments[id].scale[m]*localCoords[m]*localCoords[m];
-        }
-        minDist = minDist/fatCompartments[id].g;
+                    findSeed->FindPointsWithinRadius(compSeedRadius, coords, nearPts);
 
-        vtkIdType closestId = id;
-        vtkIdType nextClosestId = id;
+                    // find minimum distance
+                    // starting with the first
+                    vtkIdType id = nearPts->GetId(0);
 
-        int numSeedToCheck = nearPts->GetNumberOfIds();
+                    // compute position in local coordinate system
+                    vtkVector3d rvec;
+                    vtkVector3d localCoords;
+                    for(int m=0; m<3; m++){
+                        rvec[m] = coords[m]-fatCompartments[id].pos[m];
+                    }
+                    for(int m=0; m<3; m++){
+                        localCoords[m] = rvec.Dot(fatCompartments[id].axis[m]);
+                    }
 
-        // check other fat points to find minimum distance
-        for(int n=1; n<numSeedToCheck; n++){
-            vtkIdType thisId = nearPts->GetId(n);
-            for(int m=0; m<3; m++){
-                rvec[m] = coords[m]-fatCompartments[thisId].pos[m];
-            }
-            for(int m=0; m<3; m++){
-                localCoords[m] = rvec.Dot(fatCompartments[thisId].axis[m]);
-            }
+                    // compute distance function
+                    double minDist = 0.0;
+                    double nextMinDist = 0.0;
 
-            // compute distance
-            double dist = 0.0;
-            for(int m=0; m<3; m++){
-                dist += fatCompartments[thisId].scale[m]*localCoords[m]*localCoords[m];
-            }
-            dist = dist/fatCompartments[thisId].g;
+                    for(int m=0; m<3; m++){
+                        minDist += fatCompartments[id].scale[m]*localCoords[m]*localCoords[m];
+                    }
+                    minDist = minDist/fatCompartments[id].g;
 
-            if(dist < minDist){
-                nextMinDist = minDist;
-                nextClosestId = closestId;
-                minDist = dist;
-                closestId = thisId;
-            } else if(dist < nextMinDist){
-                nextMinDist = dist;
-                nextClosestId = thisId;
-            }
-        }
+                    vtkIdType closestId = id;
+                    vtkIdType nextClosestId = id;
 
-        // now check all gland seeds
-        for(int n=0; n<=numBreastCompartments; n++){
-            for(int m=0; m<3; m++){
-                rvec[m] = coords[m]-glandCompartments[n].pos[m];
-            }
-            for(int m=0; m<3; m++){
-                localCoords[m] = rvec.Dot(glandCompartments[n].axis[m]);
-            }
+                    int numSeedToCheck = nearPts->GetNumberOfIds();
 
-            // compute distance
-            double dist = 0.0;
-            for(int m=0; m<3; m++){
-                dist += glandCompartments[n].scale[m]*localCoords[m]*localCoords[m];
-            }
-            dist = dist/glandCompartments[n].g;
+                    // check other fat points to find minimum distance
+                    for(int n=1; n<numSeedToCheck; n++){
+                        vtkIdType thisId = nearPts->GetId(n);
+                        for(int m=0; m<3; m++){
+                            rvec[m] = coords[m]-fatCompartments[thisId].pos[m];
+                        }
+                        for(int m=0; m<3; m++){
+                            localCoords[m] = rvec.Dot(fatCompartments[thisId].axis[m]);
+                        }
+
+                        // compute distance
+                        double dist = 0.0;
+                        for(int m=0; m<3; m++){
+                            dist += fatCompartments[thisId].scale[m]*localCoords[m]*localCoords[m];
+                        }
+                        dist = dist/fatCompartments[thisId].g;
+
+                        if(dist < minDist){
+                            nextMinDist = minDist;
+                            nextClosestId = closestId;
+                            minDist = dist;
+                            closestId = thisId;
+                        } else if(dist < nextMinDist){
+                            nextMinDist = dist;
+                            nextClosestId = thisId;
+                        }
+                    }
+
+                    // now check all gland seeds
+                    for(int n=0; n<=numBreastCompartments; n++){
+                        for(int m=0; m<3; m++){
+                            rvec[m] = coords[m]-glandCompartments[n].pos[m];
+                        }
+                        for(int m=0; m<3; m++){
+                            localCoords[m] = rvec.Dot(glandCompartments[n].axis[m]);
+                        }
+
+                        // compute distance
+                        double dist = 0.0;
+                        for(int m=0; m<3; m++){
+                            dist += glandCompartments[n].scale[m]*localCoords[m]*localCoords[m];
+                        }
+                        dist = dist/glandCompartments[n].g;
 
 
-            // glandular compartment so add noise
-            dist += boundaryDev*dist*boundary[n].getNoise(localCoords.Normalized().GetData());
+                        // glandular compartment so add noise
+                        dist += boundaryDev*dist*boundary[n].getNoise(localCoords.Normalized().GetData());
 
-            if(dist < minDist){
-                nextMinDist = minDist;
-                nextClosestId = closestId;
-                minDist = dist;
-                closestId = numFatSeeds+n;
-            } else if(dist < nextMinDist){
-                nextMinDist = dist;
-                nextClosestId = numFatSeeds+n;
-            }
-        }
+                        if(dist < minDist){
+                            nextMinDist = minDist;
+                            nextClosestId = closestId;
+                            minDist = dist;
+                            closestId = numFatSeeds+n;
+                        } else if(dist < nextMinDist){
+                            nextMinDist = dist;
+                            nextClosestId = numFatSeeds+n;
+                        }
+                    }
 
-        // set tissue type
-        unsigned char myTissue;
+                    // set tissue type
+                    unsigned char myTissue;
 
-        if(closestId < numFatSeeds){
-            myTissue = ufat;
-        } else {
-            myTissue = compartmentVal[glandCompartments[closestId-numFatSeeds].compId];
-        }
+                    if(closestId < numFatSeeds){
+                        myTissue = ufat;
+                    } else {
+                        myTissue = compartmentVal[glandCompartments[closestId-numFatSeeds].compId];
+                    }
 
-        for(int a=0; a<voxSkip; a++){
+                    for(int a=0; a<voxSkip; a++){
                         for(int b=0; b<voxSkip; b++){
                             for(int c=0; c<voxSkip; c++){
                                 p = static_cast<unsigned char*>(breast->GetScalarPointer(i+a,j+b,k+c));
@@ -3062,54 +2968,41 @@ static int run_with_config(const po::variables_map& vm) {
                             }
                         }
                     }
-    }
+                }
             }
         }
     }
 
-    // deleting boundary noise
-    for(int i=0; i<=numBreastCompartments; i++){
-        boundary[i].~perlinNoise();
-    }
-    ::operator delete(boundary);
-
-
     // calculate voxel counts and bounding boxes
     // only updating boundBox for gland compartments
-#pragma omp parallel for
+    #pragma omp parallel for
     for(int i=0; i<=numBreastCompartments; i++){
         unsigned char val;
         unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer());
         for(int c=0; c<dim[2]; c++){
             for(int b=0; b<dim[1]; b++){
-    for(int a=0; a<dim[0]; a++){
-        val = *p;
-        p++;
-        if(val == compartmentVal[glandCompartments[i].compId]){
-            if(a < glandCompartments[i].boundBox[0]){
-                glandCompartments[i].boundBox[0] = a;
-            } else {
-                if(a > glandCompartments[i].boundBox[1]){
-        glandCompartments[i].boundBox[1] = a;
+                for(int a=0; a<dim[0]; a++){
+                    val = *p;
+                    p++;
+                    if(val == compartmentVal[glandCompartments[i].compId]){
+                        if(a < glandCompartments[i].boundBox[0]){
+                            glandCompartments[i].boundBox[0] = a;
+                        } else if(a > glandCompartments[i].boundBox[1]){
+                            glandCompartments[i].boundBox[1] = a;
+                        }
+                        if(b < glandCompartments[i].boundBox[2]){
+                            glandCompartments[i].boundBox[2] = b;
+                        } else if(b > glandCompartments[i].boundBox[3]){
+                            glandCompartments[i].boundBox[3] = b;
+                        }
+                        if(c < glandCompartments[i].boundBox[4]){
+                            glandCompartments[i].boundBox[4] = c;
+                        } else if(c > glandCompartments[i].boundBox[5]){
+                            glandCompartments[i].boundBox[5] = c;
+                        }
+                        glandCompartments[i].voxelCount += 1;
+                    }
                 }
-            }
-            if(b < glandCompartments[i].boundBox[2]){
-                glandCompartments[i].boundBox[2] = b;
-            } else {
-                if(b > glandCompartments[i].boundBox[3]){
-        glandCompartments[i].boundBox[3] = b;
-                }
-            }
-            if(c < glandCompartments[i].boundBox[4]){
-                glandCompartments[i].boundBox[4] = c;
-            } else {
-                if(c > glandCompartments[i].boundBox[5]){
-        glandCompartments[i].boundBox[5] = c;
-                }
-            }
-            glandCompartments[i].voxelCount += 1;
-        }
-    }
             }
         }
     }
@@ -3142,16 +3035,16 @@ static int run_with_config(const po::variables_map& vm) {
 
 
     // fat and ligament volume need to count voxel by voxel to capture backplane
-#pragma omp parallel for reduction(+:fatVoxels)
+    #pragma omp parallel for reduction(+:fatVoxels)
     for(int c=0; c<dim[2]; c++){
         for(int b=0; b<dim[1]; b++){
             for(int a=0; a<dim[0]; a++){
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(a,b,c));
-    if(p[0] == ufat){
-        fatVoxels += 1;
-    } else if(p[0] == tissue.cooper){
-        cooperVoxels += 1;
-    }
+                auto p = static_cast<unsigned char*>(breast->GetScalarPointer(a,b,c));
+                if(p[0] == ufat){
+                    fatVoxels += 1;
+                } else if(p[0] == tissue.cooper){
+                    cooperVoxels += 1;
+                }
             }
         }
     }
@@ -3177,29 +3070,24 @@ static int run_with_config(const po::variables_map& vm) {
 
 
     // check boundary voxels and add fat, muscle and near-nipple voxels to delete mask
-    vtkIdType nBoundary = boundaryList->GetNumberOfIds();
+    const vtkIdType nBoundary = boundaryList->GetNumberOfIds();
     vtkIdType remBoundary = nBoundary;
 
-    unsigned char *boundaryDone;
-    boundaryDone = new unsigned char [nBoundary];
+    auto boundaryDone = std::vector<bool>(nBoundary, false);
 
-    for(vtkIdType i=0; i<nBoundary; i++){
-        boundaryDone[i] = 0;
-    }
-
-
-    for(vtkIdType i=0; i<nBoundary; i++){
-        vtkIdType myId = boundaryList->GetId(i);
+    for (vtkIdType i = 0; i < nBoundary; i++) {
+        const vtkIdType myId = boundaryList->GetId(i);
         double loc[3];
+        breast->GetPoint(myId, loc);
         double pcoords[3];
         int ijk[3];
-        breast->GetPoint(myId, loc);
         breast->ComputeStructuredCoordinates(loc, ijk, pcoords);
 
-        unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(ijk));
-
-        if(p[0] == ufat || p[0] == tissue.muscle || vtkMath::Distance2BetweenPoints(loc, nipplePos) < areolaRad*areolaRad*2){
-            boundaryDone[i] = 1;
+        const auto p = static_cast<const unsigned char *>(breast->GetScalarPointer(ijk));
+        if (p[0] == ufat || p[0] == tissue.muscle
+            || vtkMath::Distance2BetweenPoints(loc, nipplePos) < 2 * areolaRad * areolaRad)
+        {
+            boundaryDone[i] = true;
             remBoundary++;
         }
     }
@@ -3207,11 +3095,11 @@ static int run_with_config(const po::variables_map& vm) {
     // determine glandular compartments to remove
 
     // find smallest compartment
-    unsigned int delNext=0;
-    double volNext=glandCompartments[0].volume;
+    unsigned int delNext = 0;
+    double volNext = glandCompartments[0].volume;
 
-    for(int i=1; i<numBreastCompartments; i++){
-        if(glandCompartments[i].volume < volNext){
+    for (int i = 1; i < numBreastCompartments; i++) {
+        if (glandCompartments[i].volume < volNext) {
             delNext = i;
             volNext = glandCompartments[i].volume;
         }
@@ -3295,8 +3183,8 @@ static int run_with_config(const po::variables_map& vm) {
         volNext = fatVol+glandVol;
         for(int i=0; i<numBreastCompartments; i++){
             if(glandCompartments[i].volume < volNext && glandCompartments[i].keep == true){
-    delNext = i;
-    volNext = glandCompartments[i].volume;
+                delNext = i;
+                volNext = glandCompartments[i].volume;
             }
         }
     }
@@ -3312,17 +3200,17 @@ static int run_with_config(const po::variables_map& vm) {
 
 
     // set removed compartments to fat
-#pragma omp parallel for
+    #pragma omp parallel for
     for(int i=0; i<foundComp; i++){
         int mc = delCompList[i];
         for(int a=glandCompartments[mc].boundBox[0]; a<=glandCompartments[mc].boundBox[1]; a++){
             for(int b=glandCompartments[mc].boundBox[2]; b<=glandCompartments[mc].boundBox[3]; b++){
-    for(int c=glandCompartments[mc].boundBox[4]; c<=glandCompartments[mc].boundBox[5]; c++){
-        unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(a,b,c));
-        if(p[0] == compartmentVal[glandCompartments[mc].compId]){
-            p[0] = ufat;
-        }
-    }
+                for(int c=glandCompartments[mc].boundBox[4]; c<=glandCompartments[mc].boundBox[5]; c++){
+                    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(a,b,c));
+                    if(p[0] == compartmentVal[glandCompartments[mc].compId]){
+                        p[0] = ufat;
+                    }
+                }
             }
         }
     }
@@ -3345,16 +3233,18 @@ static int run_with_config(const po::variables_map& vm) {
     // data structure to store TDLU locations and attributes
     // TDLUs are ovoid
     // attributes are main axis radius, off axis radius, main axis direction (unit vector)
-    vtkSmartPointer<vtkPoints> *TDLUloc;
-    TDLUloc = new vtkSmartPointer<vtkPoints>[numKeepComp];
+    auto TDLUloc = std::vector<vtkSmartPointer<vtkPoints>>();
+    TDLUloc.reserve(numKeepComp);
 
-    vtkSmartPointer<vtkDoubleArray> *TDLUattr;
-    TDLUattr = new vtkSmartPointer<vtkDoubleArray>[numKeepComp];
+    auto TDLUattr = std::vector<vtkSmartPointer<vtkDoubleArray>>();
+    TDLUattr.reserve(numKeepComp);
 
-    for(int i=0; i<numKeepComp; i++){
-        TDLUloc[i] = vtkSmartPointer<vtkPoints>::New();
-        TDLUattr[i] = vtkSmartPointer<vtkDoubleArray>::New();
-        TDLUattr[i]->SetNumberOfComponents(5);
+    for (int i = 0; i < numKeepComp; i++) {
+        TDLUloc.emplace_back(vtkSmartPointer<vtkPoints>::New());
+
+        auto attribs = vtkSmartPointer<vtkDoubleArray>::New();
+        attribs->SetNumberOfComponents(5);
+        TDLUattr.emplace_back(std::move(attribs));
     }
 
     // step size for searching for start position is minimum voxel dimension
@@ -3367,21 +3257,21 @@ static int run_with_config(const po::variables_map& vm) {
         }
     }
 
-#pragma omp parallel
+    #pragma omp parallel
     {
-#pragma omp for
+        #pragma omp for
         for(int i=0; i<keepComp; i++){
 
             // find starting direction
             double sdir[3];
 
             for(int j=0; j<3; j++){
-    sdir[j] = glandCompartments[keepCompList[i]].pos[j] - nipplePos[j];
+                sdir[j] = glandCompartments[keepCompList[i]].pos[j] - nipplePos[j];
             }
             // normalize
             double snorm = sqrt(sdir[0]*sdir[0]+sdir[1]*sdir[1]+sdir[2]*sdir[2]);
             for(int j=0; j<3; j++){
-    sdir[j] = sdir[j]/snorm;
+                sdir[j] = sdir[j]/snorm;
             }
 
             // find starting position
@@ -3395,27 +3285,27 @@ static int run_with_config(const po::variables_map& vm) {
             double dist = 0.0;
 
             while(!inCompartment && dist < snorm){
-    // find voxel containing current position
-    breast->ComputeStructuredCoordinates(currentPos, indicies, pcoords);
+                // find voxel containing current position
+                breast->ComputeStructuredCoordinates(currentPos, indicies, pcoords);
 
-    // is the voxel in the compartment?
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(indicies));
+                // is the voxel in the compartment?
+                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(indicies));
 
-    if(p[0] == compartmentVal[glandCompartments[keepCompList[i]].compId]){
-        // inside compartment
-        inCompartment = true;
-    } else {
-        // outside, step towards seed point
-        for(int j=0; j<3; j++){
-            currentPos[j] = currentPos[j] + step*sdir[j];
-        }
-        dist += step;
-    }
+                if(p[0] == compartmentVal[glandCompartments[keepCompList[i]].compId]){
+                    // inside compartment
+                    inCompartment = true;
+                } else {
+                    // outside, step towards seed point
+                    for(int j=0; j<3; j++){
+                        currentPos[j] = currentPos[j] + step*sdir[j];
+                    }
+                    dist += step;
+                }
             }
 
             // step a little extra along direction to center of compartment
             for(int j=0; j<3; j++){
-    currentPos[j] = currentPos[j] + 5*step*sdir[j];
+                currentPos[j] = currentPos[j] + 5*step*sdir[j];
             }
             dist += 5*step;
 
@@ -3429,8 +3319,7 @@ static int run_with_config(const po::variables_map& vm) {
 
             double finalDuctRad = 0.2*nippleRad;
 
-            vtkSmartPointer<vtkParametricSpline> nipcon =
-    vtkSmartPointer<vtkParametricSpline>::New();
+            auto nipcon = vtkSmartPointer<vtkParametricSpline>::New();
             nipcon->ClosedOff();
             nipcon->SetNumberOfPoints(4);
             nipcon->SetPoint(0, nipplePos[0]+step*nippleNorm[0], nipplePos[1]+step*nippleNorm[1], nipplePos[2]+step*nippleNorm[2]);
@@ -3450,47 +3339,48 @@ static int run_with_config(const po::variables_map& vm) {
             pos[1] = 0.0;	// these always zero
             pos[2] = 0.0;
 
-            while(pos[0] <= 2.0/3.0){
-    double myRad = finalDuctRad - (pos[0]-1.0/3.0)*(finalDuctRad-initRad)*3.0;
-    double myPos[3];
-    double pcoords[3];
-    int myPosPix[3];
-    nipcon->Evaluate(pos, myPos, NULL);
-    // find containing voxel
-    breast->ComputeStructuredCoordinates(myPos, myPosPix, pcoords);
-    // sphere of radius myRad should be duct - only change values under skin
-    int pixRad = (int)ceil(myRad/imgRes);
-    int thisPix[3];
-    for(int a=-pixRad; a<= pixRad; a++){
-        thisPix[0] = myPosPix[0] + a;
-        for(int b=-pixRad; b<= pixRad; b++){
-            thisPix[1] = myPosPix[1] + b;
-            for(int c=-pixRad; c<= pixRad; c++){
-                thisPix[2] = myPosPix[2] + c;
-                double dist2 = imgRes*imgRes*((double)((thisPix[0]-myPosPix[0])*(thisPix[0]-myPosPix[0])+
-                                 (thisPix[1]-myPosPix[1])*(thisPix[1]-myPosPix[1])+(thisPix[2]-myPosPix[2])*(thisPix[2]-myPosPix[2])));
-                if(dist2 <= myRad*myRad){
-        unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(thisPix));
-        unsigned char pval;
-#pragma omp atomic read
-        pval = *p;
-        if(pval != tissue.bg && pval != tissue.skin && pval != tissue.nipple){
-#pragma omp atomic write
-            *p = tissue.duct;
-        }
+            while (pos[0] <= 2.0/3.0) {
+                double myRad = finalDuctRad - (pos[0]-1.0/3.0)*(finalDuctRad-initRad)*3.0;
+                double myPos[3];
+                double pcoords[3];
+                int myPosPix[3];
+                nipcon->Evaluate(pos, myPos, NULL);
+                // find containing voxel
+                breast->ComputeStructuredCoordinates(myPos, myPosPix, pcoords);
+                // sphere of radius myRad should be duct - only change values under skin
+                int pixRad = (int)ceil(myRad/imgRes);
+                int thisPix[3];
+                for(int a=-pixRad; a<= pixRad; a++){
+                    thisPix[0] = myPosPix[0] + a;
+                    for(int b=-pixRad; b<= pixRad; b++){
+                        thisPix[1] = myPosPix[1] + b;
+                        for(int c=-pixRad; c<= pixRad; c++){
+                            thisPix[2] = myPosPix[2] + c;
+                            double dist2 = imgRes*imgRes*((double)((thisPix[0]-myPosPix[0])*(thisPix[0]-myPosPix[0])+
+                                            (thisPix[1]-myPosPix[1])*(thisPix[1]-myPosPix[1])+(thisPix[2]-myPosPix[2])*(thisPix[2]-myPosPix[2])));
+                            if(dist2 <= myRad*myRad){
+                                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(thisPix));
+                                unsigned char pval;
+
+                                #pragma omp atomic read
+                                pval = *p;
+                                if(pval != tissue.bg && pval != tissue.skin && pval != tissue.nipple){
+                                    #pragma omp atomic write
+                                    *p = tissue.duct;
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-        }
-    }
-    pos[0] += nipconStep;
+                pos[0] += nipconStep;
             }
 
             // create a seed for duct random number generator
             int seed;
-#pragma omp critical (randgen)
+            #pragma omp critical (randgen)
             {
-    seed = static_cast<int>(round(rgen->GetRangeValue(0.0, 1.0)*2147483648));
-    rgen->Next();
+                seed = static_cast<int>(round(rgen->GetRangeValue(0.0, 1.0)*2147483648));
+                rgen->Next();
             }
 
             // call duct generation function
@@ -3539,15 +3429,15 @@ static int run_with_config(const po::variables_map& vm) {
     }
 
     // re-label all compartments as gland
-#pragma omp parallel for
+    #pragma omp parallel for
     for(int c=glandBox[4]; c<=glandBox[5]; c++){
         for(int b=glandBox[2]; b<=glandBox[3]; b++){
             for(int a=glandBox[0]; a<=glandBox[1]; a++){
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(a,b,c));
-    if(p[0] <= compMax && p[0] >= compMin){
-        // glandular
-        p[0] = ugland;
-    }
+                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(a,b,c));
+                if(p[0] <= compMax && p[0] >= compMin){
+                    // glandular
+                    p[0] = ugland;
+                }
             }
         }
     }
@@ -3594,50 +3484,50 @@ static int run_with_config(const po::variables_map& vm) {
     double megaPerturbMax = 0.2;
 
     switch(densityClass){
-    case 1: // dense
-        minSkinLobuleAxis = 2.0;
-        maxSkinLobuleAxis = 4.0;
-        minSkinAxialRatio = 0.5;
-        maxSkinAxialRatio = 0.99;
-        skinLobuleDeflectMax = 0.1;
-        skinPerturbMax = 0.15;
-        maxSkinLobules = 1000;
-        numMegaLobules = 1;
-        targetSkinFatFrac = currentFatFrac + (targetFatFrac-currentFatFrac)*0.6;
-        break;
-    case 2:
-        minSkinLobuleAxis = 3.0;
-        maxSkinLobuleAxis = 7.0;
-        minSkinAxialRatio = 0.5;
-        maxSkinAxialRatio = 0.99;
-        skinLobuleDeflectMax = 0.15;
-        skinPerturbMax = 0.15;
-        maxSkinLobules = 800;
-        numMegaLobules = 2;
-        targetSkinFatFrac = currentFatFrac + (targetFatFrac-currentFatFrac)*0.6;
-        break;
-    case 3:
-        minSkinLobuleAxis = 8.0;
-        maxSkinLobuleAxis = 12.0;
-        minSkinAxialRatio = 0.5;
-        maxSkinAxialRatio = 0.99;
-        skinLobuleDeflectMax = 0.15;
-        skinPerturbMax = 0.15;
-        maxSkinLobules = 700;
-        numMegaLobules = 4;
-        targetSkinFatFrac = currentFatFrac + (targetFatFrac-currentFatFrac)*0.5;
-        break;
-    case 4:
-        minSkinLobuleAxis = 8.0;
-        maxSkinLobuleAxis = 12.0;
-        minSkinAxialRatio = 0.5;
-        maxSkinAxialRatio = 0.99;
-        skinLobuleDeflectMax = 0.15;
-        skinPerturbMax = 0.15;
-        maxSkinLobules = 500;
-        numMegaLobules = 6;
-        targetSkinFatFrac = currentFatFrac + (targetFatFrac-currentFatFrac)*0.4;
-        break;
+        case 1: // dense
+            minSkinLobuleAxis = 2.0;
+            maxSkinLobuleAxis = 4.0;
+            minSkinAxialRatio = 0.5;
+            maxSkinAxialRatio = 0.99;
+            skinLobuleDeflectMax = 0.1;
+            skinPerturbMax = 0.15;
+            maxSkinLobules = 1000;
+            numMegaLobules = 1;
+            targetSkinFatFrac = currentFatFrac + (targetFatFrac-currentFatFrac)*0.6;
+            break;
+        case 2:
+            minSkinLobuleAxis = 3.0;
+            maxSkinLobuleAxis = 7.0;
+            minSkinAxialRatio = 0.5;
+            maxSkinAxialRatio = 0.99;
+            skinLobuleDeflectMax = 0.15;
+            skinPerturbMax = 0.15;
+            maxSkinLobules = 800;
+            numMegaLobules = 2;
+            targetSkinFatFrac = currentFatFrac + (targetFatFrac-currentFatFrac)*0.6;
+            break;
+        case 3:
+            minSkinLobuleAxis = 8.0;
+            maxSkinLobuleAxis = 12.0;
+            minSkinAxialRatio = 0.5;
+            maxSkinAxialRatio = 0.99;
+            skinLobuleDeflectMax = 0.15;
+            skinPerturbMax = 0.15;
+            maxSkinLobules = 700;
+            numMegaLobules = 4;
+            targetSkinFatFrac = currentFatFrac + (targetFatFrac-currentFatFrac)*0.5;
+            break;
+        case 4:
+            minSkinLobuleAxis = 8.0;
+            maxSkinLobuleAxis = 12.0;
+            minSkinAxialRatio = 0.5;
+            maxSkinAxialRatio = 0.99;
+            skinLobuleDeflectMax = 0.15;
+            skinPerturbMax = 0.15;
+            maxSkinLobules = 500;
+            numMegaLobules = 6;
+            targetSkinFatFrac = currentFatFrac + (targetFatFrac-currentFatFrac)*0.4;
+            break;
     }
 
 
@@ -3654,20 +3544,20 @@ static int run_with_config(const po::variables_map& vm) {
         if(numSkinLobules < numMegaLobules){
             bool foundVox = false;
             while(!foundVox){
-    randVal = (int)(floor(rgen->GetRangeValue(nBoundary-numBackPlaneSkin, nBoundary)));
-    rgen->Next();
-    if(!boundaryDone[randVal]){
-        foundVox = true;
-    }
+                randVal = (int)(floor(rgen->GetRangeValue(nBoundary-numBackPlaneSkin, nBoundary)));
+                rgen->Next();
+                if(!boundaryDone[randVal]){
+                    foundVox = true;
+                }
             }
         } else {
             bool foundVox = false;
             while(!foundVox){
-    randVal = (int)(floor(rgen->GetRangeValue(0, nBoundary)));
-    rgen->Next();
-    if(!boundaryDone[randVal]){
+                randVal = (int)(floor(rgen->GetRangeValue(0, nBoundary)));
+                rgen->Next();
+                if(!boundaryDone[randVal]){
                     foundVox = true;
-    }
+                }
             }
         }
         randId = boundaryList->GetId(randVal);
@@ -3690,15 +3580,15 @@ static int run_with_config(const po::variables_map& vm) {
             axisLen[0] = rgen->GetRangeValue(minMegaLobuleAxis,maxMegaLobuleAxis);
             rgen->Next();
             for(int i=1; i<3; i++){
-    axisLen[i] = axisLen[0]*rgen->GetRangeValue(minMegaAxialRatio,maxMegaAxialRatio);
-    rgen->Next();
+                axisLen[i] = axisLen[0]*rgen->GetRangeValue(minMegaAxialRatio,maxMegaAxialRatio);
+                rgen->Next();
             }
         } else {
             axisLen[0] = rgen->GetRangeValue(minSkinLobuleAxis,maxSkinLobuleAxis);
             rgen->Next();
             for(int i=1; i<3; i++){
-    axisLen[i] = axisLen[0]*rgen->GetRangeValue(minSkinAxialRatio,maxSkinAxialRatio);
-    rgen->Next();
+                axisLen[i] = axisLen[0]*rgen->GetRangeValue(minSkinAxialRatio,maxSkinAxialRatio);
+                rgen->Next();
             }
         }
 
@@ -3734,8 +3624,7 @@ static int run_with_config(const po::variables_map& vm) {
         double dr = tan(pi*dphi);
 
         for(int k=0; k<3; k++){
-            axis0[k] = axis0[k] + dr*cos(dtheta)*axis1[k] +
-    dr*sin(dtheta)*axis2[k];
+            axis0[k] = axis0[k] + dr*cos(dtheta)*axis1[k] + dr*sin(dtheta)*axis2[k];
         }
 
         vtkMath::Normalize(axis0);
@@ -3775,70 +3664,69 @@ static int run_with_config(const po::variables_map& vm) {
         segSpace[5] = (seedVox[2] + (int)(pixelA*1.2) < glandBox[5]) ? seedVox[2] + (int)(pixelA*1.2) : glandBox[5];
 
         // iterative over search space, adjusting A as we go
-#pragma omp parallel for collapse(3)
+        #pragma omp parallel for collapse(3)
         for(int i=segSpace[0]; i<= segSpace[1]; i++){
             for(int j=segSpace[2]; j<= segSpace[3]; j++){
-    for(int k=segSpace[4]; k<= segSpace[5]; k++){
-        // continuous standard coordinates
-        double coords[3];
+                for(int k=segSpace[4]; k<= segSpace[5]; k++){
+                    // continuous standard coordinates
+                    double coords[3];
 
-        coords[0] = originCoords[0] + i*imgRes;
-        coords[1] = originCoords[1] + j*imgRes;
-        coords[2] = originCoords[2] + k*imgRes;
+                    coords[0] = originCoords[0] + i*imgRes;
+                    coords[1] = originCoords[1] + j*imgRes;
+                    coords[2] = originCoords[2] + k*imgRes;
 
-        // if duct/TDLU, may need to adjust size
-        unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                    // if duct/TDLU, may need to adjust size
+                    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
 
-        if(*p == tissue.TDLU || *p == tissue.duct){
-            // adjust A
+                    if(*p == tissue.TDLU || *p == tissue.duct){
+                        // adjust A
 
-            // local coordinates
-            vtkVector3d rvec;
-            vtkVector3d lcoords;
-            for(int m=0; m<3; m++){
-                rvec[m] = coords[m]-seed[m];
-            }
-            for(int m=0; m<3; m++){
-                lcoords[m] = rvec.Dot(axis[m]);
-            }
+                        // local coordinates
+                        vtkVector3d rvec;
+                        vtkVector3d lcoords;
+                        for(int m=0; m<3; m++){
+                            rvec[m] = coords[m]-seed[m];
+                        }
+                        for(int m=0; m<3; m++){
+                            lcoords[m] = rvec.Dot(axis[m]);
+                        }
 
-            // spherical coordinates
-            double r = rvec.Norm();
-            double phi = acos(lcoords[2]/r);
-            double theta = atan2(lcoords[1],lcoords[0]);
+                        // spherical coordinates
+                        double r = rvec.Norm();
+                        double phi = acos(lcoords[2]/r);
+                        double theta = atan2(lcoords[1],lcoords[0]);
 
-            // perturb value based on position on sphere (originalA,phi,theta)
-            double spherePos[3] = {originalA*sin(phi)*cos(theta), originalA*sin(phi)*sin(theta), originalA*cos(phi)};
-            double perturbVal;
-            if(numSkinLobules < numMegaLobules){
-                perturbVal = megaPerturbMax*perturb.getNoise(spherePos);
-            } else {
-                perturbVal = skinPerturbMax*perturb.getNoise(spherePos);
-            }
-            //double bufferVal = 0.5*bufferMax + 0.5*bufferMax*buffer.getNoise(spherePos);
+                        // perturb value based on position on sphere (originalA,phi,theta)
+                        double spherePos[3] = {originalA*sin(phi)*cos(theta), originalA*sin(phi)*sin(theta), originalA*cos(phi)};
+                        double perturbVal;
+                        if(numSkinLobules < numMegaLobules){
+                            perturbVal = megaPerturbMax*perturb.getNoise(spherePos);
+                        } else {
+                            perturbVal = skinPerturbMax*perturb.getNoise(spherePos);
+                        }
+                        //double bufferVal = 0.5*bufferMax + 0.5*bufferMax*buffer.getNoise(spherePos);
 
-            // in lobule condition is r <= A*(f(theta,phi,scaleB,scaleC)+perturb) if TDLU/duct
+                        // in lobule condition is r <= A*(f(theta,phi,scaleB,scaleC)+perturb) if TDLU/duct
 
-            double f = pow(fabs(sin(phi)*cos(theta)),2.5);
-            f += pow(fabs(sin(phi)*sin(theta))/scaleB,2.5);
-            f += pow(fabs(cos(phi))/scaleC,2.5);
-            f = 1/pow(f,1/2.5);
+                        double f = pow(fabs(sin(phi)*cos(theta)),2.5);
+                        f += pow(fabs(sin(phi)*sin(theta))/scaleB,2.5);
+                        f += pow(fabs(cos(phi))/scaleC,2.5);
+                        f = 1/pow(f,1/2.5);
 
-            // inside lobule?
-            if(r <= A*(f + perturbVal)){
-                // encroaching, need to adjust A
+                        // inside lobule?
+                        if(r <= A*(f + perturbVal)){
+                            // encroaching, need to adjust A
 
-                double newA;
-                newA = r/(f + perturbVal);
-#pragma omp critical
-                {
-        if(A > newA){
-            A = newA;
-        }
+                            double newA = r/(f + perturbVal);
+                            #pragma omp critical
+                            {
+                                if (A > newA) {
+                                    A = newA;
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-        }
-    }
             }
         }
 
@@ -3847,7 +3735,7 @@ static int run_with_config(const po::variables_map& vm) {
         // adjust search radius
         searchRad = searchRad - originalA + A;
 
-        pixelA = (int)(ceil(searchRad/imgRes));
+        pixelA = (int) ceil(searchRad/imgRes);
 
         segSpace[0] = (seedVox[0] - (int)(pixelA*1.2) > glandBox[0]) ? seedVox[0] - (int)(pixelA*1.2) : glandBox[0];
         segSpace[1] = (seedVox[0] + (int)(pixelA*1.2) < glandBox[1]) ? seedVox[0] + (int)(pixelA*1.2) : glandBox[1];
@@ -3857,72 +3745,72 @@ static int run_with_config(const po::variables_map& vm) {
         segSpace[5] = (seedVox[2] + (int)(pixelA*1.2) < glandBox[5]) ? seedVox[2] + (int)(pixelA*1.2) : glandBox[5];
 
         // iterative over search space, and segment
-#pragma omp parallel for collapse(3)
+        #pragma omp parallel for collapse(3)
         for(int i=segSpace[0]; i<= segSpace[1]; i++){
             for(int j=segSpace[2]; j<= segSpace[3]; j++){
-    for(int k=segSpace[4]; k<= segSpace[5]; k++){
+                for(int k=segSpace[4]; k<= segSpace[5]; k++){
 
-        // convert glandular tissue
-        unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                    // convert glandular tissue
+                    auto p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
 
-        if(*p == ugland){
+                    if(*p == ugland){
 
-            // continuous standard coordinates
-            double coords[3];
-            coords[0] = originCoords[0] + i*imgRes;
-            coords[1] = originCoords[1] + j*imgRes;
-            coords[2] = originCoords[2] + k*imgRes;
+                        // continuous standard coordinates
+                        double coords[3];
+                        coords[0] = originCoords[0] + i*imgRes;
+                        coords[1] = originCoords[1] + j*imgRes;
+                        coords[2] = originCoords[2] + k*imgRes;
 
-            // local coordinates
-            vtkVector3d rvec;
-            vtkVector3d lcoords;
-            for(int m=0; m<3; m++){
-                rvec[m] = coords[m]-seed[m];
-            }
-            for(int m=0; m<3; m++){
-                lcoords[m] = rvec.Dot(axis[m]);
-            }
-
-            // spherical coordinates
-            double r = rvec.Norm();
-            double phi = acos(lcoords[2]/r);
-            double theta = atan2(lcoords[1],lcoords[0]);
-
-            // perturb value based on position on sphere (originalA,phi,theta)
-            double spherePos[3] = {originalA*sin(phi)*cos(theta), originalA*sin(phi)*sin(theta), originalA*cos(phi)};
-            double perturbVal;
-                        if(numSkinLobules < numMegaLobules){
-                            perturbVal = megaPerturbMax*perturb.getNoise(spherePos);
-            } else {
-                perturbVal = skinPerturbMax*perturb.getNoise(spherePos);
+                        // local coordinates
+                        vtkVector3d rvec;
+                        vtkVector3d lcoords;
+                        for(int m=0; m<3; m++){
+                            rvec[m] = coords[m]-seed[m];
+                        }
+                        for(int m=0; m<3; m++){
+                            lcoords[m] = rvec.Dot(axis[m]);
                         }
 
-            double f = pow(fabs(sin(phi)*cos(theta)),2.5);
-            f += pow(fabs(sin(phi)*sin(theta))/scaleB,2.5);
-            f += pow(fabs(cos(phi))/scaleC,2.5);
-            f = 1/pow(f,1/2.5);
+                        // spherical coordinates
+                        double r = rvec.Norm();
+                        double phi = acos(lcoords[2]/r);
+                        double theta = atan2(lcoords[1],lcoords[0]);
 
-            // inside lobule?
-            if(r <= A*(f + perturbVal)-skinLigThick){
-                // gland to fat
-                *p = ufat;
-#pragma omp atomic
-                glandVoxels -= 1;
-#pragma omp atomic
-                fatVoxels += 1;
-            } else if(r <= A*(f + perturbVal)) {
-                // disabled skin lobule ligaments
-                // *p = tissue.cooper;
-                //#pragma omp atomic
-                //cooperVoxels += 1;
-                *p = ufat;
-#pragma omp atomic
-                fatVoxels += 1;
-#pragma omp atomic
-                glandVoxels -= 1;
-            }
-        }
-    }
+                        // perturb value based on position on sphere (originalA,phi,theta)
+                        double spherePos[3] = {originalA*sin(phi)*cos(theta), originalA*sin(phi)*sin(theta), originalA*cos(phi)};
+                        double perturbVal;
+                                    if(numSkinLobules < numMegaLobules){
+                                        perturbVal = megaPerturbMax*perturb.getNoise(spherePos);
+                        } else {
+                            perturbVal = skinPerturbMax*perturb.getNoise(spherePos);
+                                    }
+
+                        double f = pow(fabs(sin(phi)*cos(theta)),2.5);
+                        f += pow(fabs(sin(phi)*sin(theta))/scaleB,2.5);
+                        f += pow(fabs(cos(phi))/scaleC,2.5);
+                        f = 1/pow(f,1/2.5);
+
+                        // inside lobule?
+                        if(r <= A*(f + perturbVal)-skinLigThick){
+                            // gland to fat
+                            *p = ufat;
+                            #pragma omp atomic
+                            glandVoxels -= 1;
+                            #pragma omp atomic
+                            fatVoxels += 1;
+                        } else if(r <= A*(f + perturbVal)) {
+                            // disabled skin lobule ligaments
+                            // *p = tissue.cooper;
+                            //#pragma omp atomic
+                            //cooperVoxels += 1;
+                            *p = ufat;
+                            #pragma omp atomic
+                            fatVoxels += 1;
+                            #pragma omp atomic
+                            glandVoxels -= 1;
+                        }
+                    }
+                }
             }
         }
 
@@ -3936,23 +3824,23 @@ static int run_with_config(const po::variables_map& vm) {
         numSkinLobules++;
 
         // update skin boundary
-#pragma omp parallel for
+        #pragma omp parallel for
         for(int i=0; i<nBoundary; i++){
             if(!boundaryDone[i]){
-    // check if should be removed
-    vtkIdType myId = boundaryList->GetId(i);
-    double loc[3];
-    double pcoords[3];
-    int ijk[3];
-    breast->GetPoint(myId, loc);
-    breast->ComputeStructuredCoordinates(loc, ijk, pcoords);
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(ijk));
+                // check if should be removed
+                vtkIdType myId = boundaryList->GetId(i);
+                double loc[3];
+                double pcoords[3];
+                int ijk[3];
+                breast->GetPoint(myId, loc);
+                breast->ComputeStructuredCoordinates(loc, ijk, pcoords);
+                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(ijk));
 
-    if(p[0] == ufat || p[0] == tissue.cooper){
-        boundaryDone[i] = 1;
-#pragma omp atomic
-        remBoundary--;
-    }
+                if(p[0] == ufat || p[0] == tissue.cooper){
+                    boundaryDone[i] = 1;
+                    #pragma omp atomic
+                    remBoundary--;
+                }
             }
         }
     }
@@ -3987,46 +3875,46 @@ static int run_with_config(const po::variables_map& vm) {
     double smallLobuleFraction;
 
     switch(densityClass){
-    case 1: // dense
-        maxInnerFatLobuleTry = 1600;
-        minInnerLobuleAxis = 2.0;
-        maxInnerLobuleAxis = 5.0;
-        innerLobuleDeflectMax = 0.25;
-        minInnerAxialRatio = 0.3;
-        maxInnerAxialRatio = 0.6;
-        innerPerturbMax = 0.3;
-        smallLobuleFraction = 0.1;
-        break;
-    case 2: // heterog
-        maxInnerFatLobuleTry = 1600;
-        minInnerLobuleAxis= 3.0;
-        maxInnerLobuleAxis= 8.0;
-        innerLobuleDeflectMax = 0.25;
-        minInnerAxialRatio = 0.2;
-        maxInnerAxialRatio = 0.6;
-        innerPerturbMax = 0.25;
-        smallLobuleFraction = 0.15;
-        break;
-    case 3: // scattered
-        maxInnerFatLobuleTry = 1600;
-        minInnerLobuleAxis= 3.0;
-        maxInnerLobuleAxis= 12.0;
-        innerLobuleDeflectMax = 0.25;
-        minInnerAxialRatio = 0.2;
-        maxInnerAxialRatio = 0.6;
-        innerPerturbMax = 0.25;
-        smallLobuleFraction = 0.05;
-        break;
-    case 4: // fatty
-        maxInnerFatLobuleTry = 1600;
-        minInnerLobuleAxis= 5.0;
-        maxInnerLobuleAxis= 20.0;
-        innerLobuleDeflectMax = 0.25;
-        minInnerAxialRatio = 0.2;
-        maxInnerAxialRatio = 0.6;
-        innerPerturbMax = 0.2;
-        smallLobuleFraction = 0.05;
-        break;
+        case 1: // dense
+            maxInnerFatLobuleTry = 1600;
+            minInnerLobuleAxis = 2.0;
+            maxInnerLobuleAxis = 5.0;
+            innerLobuleDeflectMax = 0.25;
+            minInnerAxialRatio = 0.3;
+            maxInnerAxialRatio = 0.6;
+            innerPerturbMax = 0.3;
+            smallLobuleFraction = 0.1;
+            break;
+        case 2: // heterog
+            maxInnerFatLobuleTry = 1600;
+            minInnerLobuleAxis= 3.0;
+            maxInnerLobuleAxis= 8.0;
+            innerLobuleDeflectMax = 0.25;
+            minInnerAxialRatio = 0.2;
+            maxInnerAxialRatio = 0.6;
+            innerPerturbMax = 0.25;
+            smallLobuleFraction = 0.15;
+            break;
+        case 3: // scattered
+            maxInnerFatLobuleTry = 1600;
+            minInnerLobuleAxis= 3.0;
+            maxInnerLobuleAxis= 12.0;
+            innerLobuleDeflectMax = 0.25;
+            minInnerAxialRatio = 0.2;
+            maxInnerAxialRatio = 0.6;
+            innerPerturbMax = 0.25;
+            smallLobuleFraction = 0.05;
+            break;
+        case 4: // fatty
+            maxInnerFatLobuleTry = 1600;
+            minInnerLobuleAxis= 5.0;
+            maxInnerLobuleAxis= 20.0;
+            innerLobuleDeflectMax = 0.25;
+            minInnerAxialRatio = 0.2;
+            maxInnerAxialRatio = 0.6;
+            innerPerturbMax = 0.2;
+            smallLobuleFraction = 0.05;
+            break;
     }
 
     while(numInnerFatLobuleTry < maxInnerFatLobuleTry && currentFatFrac < targetFatFrac){
@@ -4048,7 +3936,7 @@ static int run_with_config(const po::variables_map& vm) {
             // tissue type
             p = static_cast<unsigned char*>(breast->GetScalarPointer(seedVox));
             if (*p == ugland){
-    foundSeed = true;
+                foundSeed = true;
             }
         }
 
@@ -4067,15 +3955,15 @@ static int run_with_config(const po::variables_map& vm) {
         if(targetFatFrac-currentFatFrac > smallLobuleFraction){
             axisLen[0] = pow((remVol*0.05+1.0)*0.75/pi/pow((maxInnerAxialRatio+minInnerAxialRatio)/2.0,2.0),1.0/3.0);
             for(int i=1; i<3; i++){
-    axisLen[i] = axisLen[0]*rgen->GetRangeValue(minInnerAxialRatio,maxInnerAxialRatio);
-    rgen->Next();
+                axisLen[i] = axisLen[0]*rgen->GetRangeValue(minInnerAxialRatio,maxInnerAxialRatio);
+                rgen->Next();
             }
         } else {
             axisLen[0] = rgen->GetRangeValue(minSmallLobuleAxis, maxSmallLobuleAxis);
             rgen->Next();
             for(int i=1; i<3; i++){
-    axisLen[i] = axisLen[0]*rgen->GetRangeValue(minSmallAxialRatio,maxSmallAxialRatio);
-    rgen->Next();
+                axisLen[i] = axisLen[0]*rgen->GetRangeValue(minSmallAxialRatio,maxSmallAxialRatio);
+                rgen->Next();
             }
         }
 
@@ -4107,8 +3995,7 @@ static int run_with_config(const po::variables_map& vm) {
         double dr = tan(pi*dphi);
 
         for(int k=0; k<3; k++){
-            axis0[k] = axis0[k] + dr*cos(dtheta)*axis1[k] +
-    dr*sin(dtheta)*axis2[k];
+            axis0[k] = axis0[k] + dr*cos(dtheta)*axis1[k] + dr*sin(dtheta)*axis2[k];
         }
 
         vtkMath::Normalize(axis0);
@@ -4153,60 +4040,60 @@ static int run_with_config(const po::variables_map& vm) {
         segSpace[5] = (seedVox[2] + (int)(pixelA*1.2) < glandBox[5]) ? seedVox[2] + (int)(pixelA*1.2) : glandBox[5];
 
         // iterative over search space, and segment
-#pragma omp parallel for collapse(3)
+        #pragma omp parallel for collapse(3)
         for(int i=segSpace[0]; i<= segSpace[1]; i++){
             for(int j=segSpace[2]; j<= segSpace[3]; j++){
-    for(int k=segSpace[4]; k<= segSpace[5]; k++){
+                for(int k=segSpace[4]; k<= segSpace[5]; k++){
 
-        // convert glandular tissue
-        unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                    // convert glandular tissue
+                    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
 
-        if(*p == ugland || *p == tissue.TDLU){
+                    if(*p == ugland || *p == tissue.TDLU){
 
-            // continuous standard coordinates
-            double coords[3];
-            coords[0] = originCoords[0] + i*imgRes;
-            coords[1] = originCoords[1] + j*imgRes;
-            coords[2] = originCoords[2] + k*imgRes;
+                        // continuous standard coordinates
+                        double coords[3];
+                        coords[0] = originCoords[0] + i*imgRes;
+                        coords[1] = originCoords[1] + j*imgRes;
+                        coords[2] = originCoords[2] + k*imgRes;
 
-            // local coordinates
-            vtkVector3d rvec;
-            vtkVector3d lcoords;
-            for(int m=0; m<3; m++){
-                rvec[m] = coords[m]-seed[m];
-            }
-            for(int m=0; m<3; m++){
-                lcoords[m] = rvec.Dot(axis[m]);
-            }
+                        // local coordinates
+                        vtkVector3d rvec;
+                        vtkVector3d lcoords;
+                        for(int m=0; m<3; m++){
+                            rvec[m] = coords[m]-seed[m];
+                        }
+                        for(int m=0; m<3; m++){
+                            lcoords[m] = rvec.Dot(axis[m]);
+                        }
 
-            // spherical coordinates
-            double r = rvec.Norm();
-            double phi = acos(lcoords[2]/r);
-            double theta = atan2(lcoords[1],lcoords[0]);
+                        // spherical coordinates
+                        double r = rvec.Norm();
+                        double phi = acos(lcoords[2]/r);
+                        double theta = atan2(lcoords[1],lcoords[0]);
 
-            // perturb value based on position on sphere (originalA,phi,theta)
-            double spherePos[3] = {originalA*sin(phi)*cos(theta), originalA*sin(phi)*sin(theta), originalA*cos(phi)};
-            double perturbVal = innerPerturbMax*perturb.getNoise(spherePos);
+                        // perturb value based on position on sphere (originalA,phi,theta)
+                        double spherePos[3] = {originalA*sin(phi)*cos(theta), originalA*sin(phi)*sin(theta), originalA*cos(phi)};
+                        double perturbVal = innerPerturbMax*perturb.getNoise(spherePos);
 
-            // in lobule condition is r <= A*(f(theta,phi,scaleB,scaleC)+perturb+buffer) if TDLU/duct
-            // or r <= A*(f(theta,phi,scaleB,scaleC)+perturb) if buffer
+                        // in lobule condition is r <= A*(f(theta,phi,scaleB,scaleC)+perturb+buffer) if TDLU/duct
+                        // or r <= A*(f(theta,phi,scaleB,scaleC)+perturb) if buffer
 
-            double f = pow(fabs(sin(phi)*cos(theta)),2.5);
-            f += pow(fabs(sin(phi)*sin(theta))/scaleB,2.5);
-            f += pow(fabs(cos(phi))/scaleC,2.5);
-            f = 1/pow(f,1/2.5);
+                        double f = pow(fabs(sin(phi)*cos(theta)),2.5);
+                        f += pow(fabs(sin(phi)*sin(theta))/scaleB,2.5);
+                        f += pow(fabs(cos(phi))/scaleC,2.5);
+                        f = 1/pow(f,1/2.5);
 
-            // inside lobule?
-            if(r <= A*(f + perturbVal)){
-                // gland to fat
-                *p = ufat;
-#pragma omp atomic
-                glandVoxels -= 1;
-#pragma omp atomic
-                fatVoxels += 1;
-            }
-        }
-    }
+                        // inside lobule?
+                        if(r <= A*(f + perturbVal)){
+                            // gland to fat
+                            *p = ufat;
+                            #pragma omp atomic
+                            glandVoxels -= 1;
+                            #pragma omp atomic
+                            fatVoxels += 1;
+                        }
+                    }
+                }
             }
         }
         // update fatfrac
@@ -4222,49 +4109,45 @@ static int run_with_config(const po::variables_map& vm) {
      * Cooper's Ligaments
      ******************/
 
-    double ligThick = vm["lig.thickness"].as<double>();
+    const double ligThick = vm["lig.thickness"].as<double>();
 
-    double maxLigAxis = vm["lig.maxAxis"].as<double>();
-    double minLigAxis = vm["lig.minAxis"].as<double>();
-    double maxLigAxisRatio = vm["lig.maxAxialRatio"].as<double>();
-    double minLigAxisRatio = vm["lig.minAxialRatio"].as<double>();
-    double ligPerturbMax = vm["lig.maxPerturb"].as<double>();
-    double ligDeflectMax = vm["lig.maxDeflect"].as<double>();
+    const double maxLigAxis = vm["lig.maxAxis"].as<double>();
+    const double minLigAxis = vm["lig.minAxis"].as<double>();
+    const double maxLigAxisRatio = vm["lig.maxAxialRatio"].as<double>();
+    const double minLigAxisRatio = vm["lig.minAxialRatio"].as<double>();
+    const double ligPerturbMax = vm["lig.maxPerturb"].as<double>();
+    const double ligDeflectMax = vm["lig.maxDeflect"].as<double>();
 
     double ligamentedFrac = 0.0;
-    double targetLigFrac = vm["lig.targetFrac"].as<double>();
-    long long int ligedVoxels = 0;
+    const double targetLigFrac = vm["lig.targetFrac"].as<double>();
+    long long ligedVoxels = 0;
 
-    double ligPerlinScale = vm["lig.scale"].as<double>();
-    double ligPerlinLac = vm["lig.lacunarity"].as<double>();
-    double ligPerlinPers = vm["lig.persistence"].as<double>();
-    int ligPerlinOct = vm["lig.numOctaves"].as<int>();
+    const double ligPerlinScale = vm["lig.scale"].as<double>();
+    const double ligPerlinLac = vm["lig.lacunarity"].as<double>();
+    const double ligPerlinPers = vm["lig.persistence"].as<double>();
+    const unsigned ligPerlinOct = vm["lig.numOctaves"].as<unsigned>();
 
-    int maxFatLigTry = vm["lig.maxTry"].as<int>();
+    const unsigned maxFatLigTry = vm["lig.maxTry"].as<unsigned>();
     int flnum = 0;
     int fltry = 0;
 
-    while(ligamentedFrac < targetLigFrac && fltry < maxFatLigTry){
-
+    while (ligamentedFrac < targetLigFrac && fltry < maxFatLigTry) {
         // find a voxel in unligamented region
         bool foundSeed = false;
 
         int seedVox[3];
-        unsigned char *p;
-        while(!foundSeed){
-            seedVox[0] = breastExtent[0] + (int)(ceil(rgen->GetRangeValue(0, breastExtent[1]-breastExtent[0])));
-            rgen->Next();
-            seedVox[1] = breastExtent[2] + (int)(ceil(rgen->GetRangeValue(0, breastExtent[3]-breastExtent[2])));
-            rgen->Next();
-            seedVox[2] = breastExtent[4] + (int)(ceil(rgen->GetRangeValue(0, breastExtent[5]-breastExtent[4])));
-            rgen->Next();
-
+        while (!foundSeed) {
+            for (unsigned j = 0; j < 3; j++) {
+                auto randExtent = ceil(rgen->GetRangeValue(0, breastExtent[2*j+1] - breastExtent[2*j]));
+                rgen->Next();
+                seedVox[j] = breastExtent[2*j] + static_cast<int>(randExtent);
+            }
             fltry += 1;
 
             // tissue type
-            p = static_cast<unsigned char*>(breast->GetScalarPointer(seedVox));
+            auto p = static_cast<const unsigned char *>(breast->GetScalarPointer(seedVox));
             if (*p == ufat || *p == ugland){
-    foundSeed = true;
+                foundSeed = true;
             }
         }
 
@@ -4282,7 +4165,7 @@ static int run_with_config(const po::variables_map& vm) {
         double axisLen[3];
         axisLen[0] = rgen->GetRangeValue(minLigAxis,maxLigAxis);
         rgen->Next();
-        for(int i=1; i<3; i++){
+        for (unsigned i = 1; i < 3; i++) {
             axisLen[i] = axisLen[0]*rgen->GetRangeValue(minLigAxisRatio,maxLigAxisRatio);
             rgen->Next();
         }
@@ -4297,13 +4180,12 @@ static int run_with_config(const po::variables_map& vm) {
         double axis2[3];
 
         // principle direction towards nipple
-        for(int j=0; j<3; j++){
+        for (unsigned j = 0; j < 3; j++) {
             axis0[j] = nipplePos[j] - seed[j];
         }
 
 
         vtkMath::Normalize(axis0);
-
         // randomize other axes
         vtkMath::Perpendiculars(axis0, axis1, axis2, rgen->GetRangeValue(0,2*pi));
         rgen->Next();
@@ -4316,9 +4198,8 @@ static int run_with_config(const po::variables_map& vm) {
         rgen->Next();
         double dr = tan(pi*dphi);
 
-        for(int k=0; k<3; k++){
-            axis0[k] = axis0[k] + dr*cos(dtheta)*axis1[k] +
-    dr*sin(dtheta)*axis2[k];
+        for (unsigned k = 0; k < 3; k++) {
+            axis0[k] = axis0[k] + dr*cos(dtheta)*axis1[k] + dr*sin(dtheta)*axis2[k];
         }
 
         vtkMath::Normalize(axis0);
@@ -4327,7 +4208,7 @@ static int run_with_config(const po::variables_map& vm) {
 
         // convert to vtkVector3d array
         vtkVector3d axis[3];
-        for(int i=0; i<3; i++){
+        for (unsigned i = 0; i < 3; i++) {
             axis[0][i] = axis0[i];
             axis[1][i] = axis1[i];
             axis[2][i] = axis2[i];
@@ -4336,9 +4217,9 @@ static int run_with_config(const po::variables_map& vm) {
         // TODO: jitter axis directions
 
         // Perlin noise for perturbation and buffer
-        int32_t perturbSeed = (int32_t)(ceil(rgen->GetRangeValue(-1073741824, 1073741824)));
+        const int32_t perturbSeed = (int32_t) ceil(rgen->GetRangeValue(-1073741824, 1073741824));
         rgen->Next();
-        perlinNoise perturb(vm, perturbSeed, A*ligPerlinScale, ligPerlinLac, ligPerlinPers, ligPerlinOct);
+        auto perturb = perlinNoise(vm, perturbSeed, A*ligPerlinScale, ligPerlinLac, ligPerlinPers, ligPerlinOct);
 
         double searchRad = A*(1+ligPerturbMax)+ligThick;
 
@@ -4354,62 +4235,62 @@ static int run_with_config(const po::variables_map& vm) {
         segSpace[5] = (seedVox[2] + (int)(pixelA*1.2) < breastExtent[5]) ? seedVox[2] + (int)(pixelA*1.2) : breastExtent[5];
 
         // iterative over search space, and segment
-#pragma omp parallel for collapse(3)
+        #pragma omp parallel for collapse(3)
         for(int i=segSpace[0]; i<= segSpace[1]; i++){
             for(int j=segSpace[2]; j<= segSpace[3]; j++){
-    for(int k=segSpace[4]; k<= segSpace[5]; k++){
+                for(int k=segSpace[4]; k<= segSpace[5]; k++){
 
-        // convert glandular tissue
-        unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                    // convert glandular tissue
+                    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
 
-        if(*p == ufat || *p == ugland){
+                    if(*p == ufat || *p == ugland){
 
-            // continuous standard coordinates
-            double coords[3];
-            coords[0] = originCoords[0] + i*imgRes;
-            coords[1] = originCoords[1] + j*imgRes;
-            coords[2] = originCoords[2] + k*imgRes;
+                        // continuous standard coordinates
+                        double coords[3];
+                        coords[0] = originCoords[0] + i*imgRes;
+                        coords[1] = originCoords[1] + j*imgRes;
+                        coords[2] = originCoords[2] + k*imgRes;
 
-            // local coordinates
-            vtkVector3d rvec;
-            vtkVector3d lcoords;
-            for(int m=0; m<3; m++){
-                rvec[m] = coords[m]-seed[m];
-            }
-            for(int m=0; m<3; m++){
-                lcoords[m] = rvec.Dot(axis[m]);
-            }
+                        // local coordinates
+                        vtkVector3d rvec;
+                        vtkVector3d lcoords;
+                        for(int m=0; m<3; m++){
+                            rvec[m] = coords[m]-seed[m];
+                        }
+                        for(int m=0; m<3; m++){
+                            lcoords[m] = rvec.Dot(axis[m]);
+                        }
 
-            // spherical coordinates
-            double r = rvec.Norm();
-            double phi = acos(lcoords[2]/r);
-            double theta = atan2(lcoords[1],lcoords[0]);
+                        // spherical coordinates
+                        double r = rvec.Norm();
+                        double phi = acos(lcoords[2]/r);
+                        double theta = atan2(lcoords[1],lcoords[0]);
 
-            double spherePos[3] = {A*sin(phi)*cos(theta), A*sin(phi)*sin(theta), A*cos(phi)};
-            double perturbVal = ligPerturbMax*perturb.getNoise(spherePos);
+                        double spherePos[3] = {A*sin(phi)*cos(theta), A*sin(phi)*sin(theta), A*cos(phi)};
+                        double perturbVal = ligPerturbMax*perturb.getNoise(spherePos);
 
-            double f = pow(fabs(sin(phi)*cos(theta)),2.7);
-            f += pow(fabs(sin(phi)*sin(theta))/scaleB,2.7);
-            f += pow(fabs(cos(phi))/scaleC,2.7);
-            f = 1.0/pow(f,1/2.7);
+                        double f = pow(fabs(sin(phi)*cos(theta)),2.7);
+                        f += pow(fabs(sin(phi)*sin(theta))/scaleB,2.7);
+                        f += pow(fabs(cos(phi))/scaleC,2.7);
+                        f = 1.0/pow(f,1/2.7);
 
-            // inside ligament lobule?
-            if(r <= A*(f + perturbVal)-ligThick){
-                // interior of ligament volume
-                if(*p == ufat){
-        *p = tissue.fat;
-                } else {
-        *p = tissue.gland;
+                        // inside ligament lobule?
+                        if(r <= A*(f + perturbVal)-ligThick){
+                            // interior of ligament volume
+                            if(*p == ufat){
+                                *p = tissue.fat;
+                            } else {
+                                *p = tissue.gland;
+                            }
+                            #pragma omp atomic
+                            ligedVoxels += 1;
+                        } else if(r <= A*(f + perturbVal)) {
+                            *p = tissue.cooper;
+                            #pragma omp atomic
+                            ligedVoxels += 1;
+                        }
+                    }
                 }
-#pragma omp atomic
-                ligedVoxels += 1;
-            } else if(r <= A*(f + perturbVal)) {
-                *p = tissue.cooper;
-#pragma omp atomic
-                ligedVoxels += 1;
-            }
-        }
-    }
             }
         }
         // update ligamented frac
@@ -4419,17 +4300,17 @@ static int run_with_config(const po::variables_map& vm) {
 
     // convert remaining ufat and ugland
 
-#pragma omp parallel for schedule(static,1)
+    #pragma omp parallel for schedule(static,1)
     for(int k=0; k<dim[2]; k++){
         unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(0,0,k));
         for(int j=0; j<dim[1]; j++){
             for(int i=0; i<dim[0]; i++){
-    if(*p == ugland){
-        *p = tissue.gland;
-    } else if(*p == ufat){
-        *p = tissue.fat;
-    }
-    p++;
+                if(*p == ugland){
+                    *p = tissue.gland;
+                } else if(*p == ufat){
+                    *p = tissue.fat;
+                }
+                p++;
             }
         }
     }
@@ -4441,11 +4322,11 @@ static int run_with_config(const po::variables_map& vm) {
     for(int i=0; i<dim[0]; i++){
         for(int j=0; j<dim[1]; j++){
             for(int k=0; k<dim[2]; k++){
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-    if(p[0] == tissue.fat){
-        fatVoxBound[0] = i;
-        goto foundf0;
-    }
+                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                if(p[0] == tissue.fat){
+                    fatVoxBound[0] = i;
+                    goto foundf0;
+                }
             }
         }
     }
@@ -4454,11 +4335,11 @@ static int run_with_config(const po::variables_map& vm) {
     for(int i=dim[0]-1; i>=0; i--){
         for(int j=0; j<dim[1]; j++){
             for(int k=0; k<dim[2]; k++){
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-    if(p[0] == tissue.fat){
-        fatVoxBound[1] = i;
-        goto foundf1;
-    }
+                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                if(p[0] == tissue.fat){
+                    fatVoxBound[1] = i;
+                    goto foundf1;
+                }
             }
         }
     }
@@ -4467,11 +4348,11 @@ static int run_with_config(const po::variables_map& vm) {
     for(int j=0; j<dim[1]; j++){
         for(int i=0; i<dim[0]; i++){
             for(int k=0; k<dim[2]; k++){
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-    if(p[0] == tissue.fat){
-        fatVoxBound[2] = j;
-        goto foundf2;
-    }
+                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                if(p[0] == tissue.fat){
+                    fatVoxBound[2] = j;
+                    goto foundf2;
+                }
             }
         }
     }
@@ -4480,11 +4361,11 @@ static int run_with_config(const po::variables_map& vm) {
     for(int j=dim[1]-1; j>=0; j--){
         for(int i=0; i<dim[0]; i++){
             for(int k=0; k<dim[2]; k++){
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-    if(p[0] == tissue.fat){
-        fatVoxBound[3] = j;
-        goto foundf3;
-    }
+                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                if(p[0] == tissue.fat){
+                    fatVoxBound[3] = j;
+                    goto foundf3;
+                }
             }
         }
     }
@@ -4493,11 +4374,11 @@ static int run_with_config(const po::variables_map& vm) {
     for(int k=0; k<dim[2]; k++){
         for(int i=0; i<dim[0]; i++){
             for(int j=0; j<dim[1]; j++){
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-    if(p[0] == tissue.fat){
-        fatVoxBound[4] = k;
-        goto foundf4;
-    }
+                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                if(p[0] == tissue.fat){
+                    fatVoxBound[4] = k;
+                    goto foundf4;
+                }
             }
         }
     }
@@ -4506,11 +4387,11 @@ static int run_with_config(const po::variables_map& vm) {
     for(int k=dim[2]-1; k>=0; k--){
         for(int i=0; i<dim[0]; i++){
             for(int j=0; j<dim[1]; j++){
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-    if(p[0] == tissue.fat){
-        fatVoxBound[5] = k;
-        goto foundf5;
-    }
+                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                if(p[0] == tissue.fat){
+                    fatVoxBound[5] = k;
+                    goto foundf5;
+                }
             }
         }
     }
@@ -4519,11 +4400,11 @@ static int run_with_config(const po::variables_map& vm) {
     for(int i=0; i<dim[0]; i++){
         for(int j=0; j<dim[1]; j++){
             for(int k=0; k<dim[2]; k++){
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-    if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
-        glandVoxBound[0] = i;
-        goto foundg0;
-    }
+                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
+                    glandVoxBound[0] = i;
+                    goto foundg0;
+                }
             }
         }
     }
@@ -4532,11 +4413,11 @@ static int run_with_config(const po::variables_map& vm) {
     for(int i=dim[0]-1; i>=0; i--){
         for(int j=0; j<dim[1]; j++){
             for(int k=0; k<dim[2]; k++){
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-    if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
-        glandVoxBound[1] = i;
-        goto foundg1;
-    }
+                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
+                    glandVoxBound[1] = i;
+                    goto foundg1;
+                }
             }
         }
     }
@@ -4545,11 +4426,11 @@ static int run_with_config(const po::variables_map& vm) {
     for(int j=0; j<dim[1]; j++){
         for(int i=0; i<dim[0]; i++){
             for(int k=0; k<dim[2]; k++){
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-    if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
-        glandVoxBound[2] = j;
-        goto foundg2;
-    }
+                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
+                    glandVoxBound[2] = j;
+                    goto foundg2;
+                }
             }
         }
     }
@@ -4558,11 +4439,11 @@ static int run_with_config(const po::variables_map& vm) {
     for(int j=dim[1]-1; j>=0; j--){
         for(int i=0; i<dim[0]; i++){
             for(int k=0; k<dim[2]; k++){
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-    if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
-        glandVoxBound[3] = j;
-        goto foundg3;
-    }
+                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
+                    glandVoxBound[3] = j;
+                    goto foundg3;
+                }
             }
         }
     }
@@ -4571,11 +4452,11 @@ static int run_with_config(const po::variables_map& vm) {
     for(int k=0; k<dim[2]; k++){
         for(int i=0; i<dim[0]; i++){
             for(int j=0; j<dim[1]; j++){
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-    if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
-        glandVoxBound[4] = k;
-        goto foundg4;
-    }
+                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
+                    glandVoxBound[4] = k;
+                    goto foundg4;
+                }
             }
         }
     }
@@ -4584,11 +4465,11 @@ static int run_with_config(const po::variables_map& vm) {
     for(int k=dim[2]-1; k>=0; k--){
         for(int i=0; i<dim[0]; i++){
             for(int j=0; j<dim[1]; j++){
-    unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
-    if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
-        glandVoxBound[5] = k;
-        goto foundg5;
-    }
+                unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(i,j,k));
+                if(p[0] == tissue.duct || p[0] == tissue.TDLU || p[0] == tissue.gland){
+                    glandVoxBound[5] = k;
+                    goto foundg5;
+                }
             }
         }
     }
@@ -4620,8 +4501,7 @@ static int run_with_config(const po::variables_map& vm) {
     backMinInd += (int)(ceil(1.0/imgRes));
 
     // create mask for back plane
-    vtkSmartPointer<vtkImageData> backPlane =
-        vtkSmartPointer<vtkImageData>::New();
+    auto backPlane = vtkSmartPointer<vtkImageData>::New();
 
     backPlane->SetSpacing(breast->GetSpacing());
 
@@ -4640,12 +4520,12 @@ static int run_with_config(const po::variables_map& vm) {
             unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(backMinInd,j,k));
             unsigned char* q = static_cast<unsigned char*>(backPlane->GetScalarPointer(backMinInd,j,k));
             if(p[0] != tissue.bg && p[0] != tissue.skin){
-    q[0] = 1;
-    voxelCount += 1;
-    backMass[0] = backMass[0] + (j - backMass[0])/voxelCount;
-    backMass[1] = backMass[1] + (k - backMass[1])/voxelCount;
+                q[0] = 1;
+                voxelCount += 1;
+                backMass[0] = backMass[0] + (j - backMass[0])/voxelCount;
+                backMass[1] = backMass[1] + (k - backMass[1])/voxelCount;
             } else {
-    q[0] = 0;
+                q[0] = 0;
             }
         }
     }
@@ -4711,7 +4591,7 @@ static int run_with_config(const po::variables_map& vm) {
             breast->ComputeStructuredCoordinates(testPos,voxelPos,lcoords);
             unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(voxelPos));
             if(p[0] == tissue.bg || p[0] == tissue.skin){
-    edge = true;
+                edge = true;
             }
         }
         arteryStartPosList[i][0] = testPos[0];
@@ -4746,7 +4626,7 @@ static int run_with_config(const po::variables_map& vm) {
             breast->ComputeStructuredCoordinates(testPos,voxelPos,lcoords);
             unsigned char* p = static_cast<unsigned char*>(breast->GetScalarPointer(voxelPos));
             if(p[0] == tissue.bg || p[0] == tissue.skin){
-    edge = true;
+                edge = true;
             }
         }
         veinStartPosList[i][0] = testPos[0];
@@ -4793,8 +4673,7 @@ static int run_with_config(const po::variables_map& vm) {
      ************/
 
     // save segmented breast with duct network
-    vtkSmartPointer<vtkXMLImageDataWriter> writerSeg5 =
-        vtkSmartPointer<vtkXMLImageDataWriter>::New();
+    auto writerSeg5 = vtkSmartPointer<vtkXMLImageDataWriter>::New();
 
     writerSeg5->SetFileName(outVTIFilename.c_str());
     writerSeg5->SetInputData(breast);
